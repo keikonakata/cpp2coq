@@ -11,13 +11,74 @@ using namespace clang::tooling;
 static llvm::cl::OptionCategory TranslateImplOptions("translate-impl options");
 
 std::string NameOfFunctionDecl(const FunctionDecl *d) {
-    return std::string { "name" };
+    return d->getNameAsString();
 }
 
+std::string TranslateBuiltinType(const BuiltinType *ty) {
+    BuiltinType::Kind kind = ty->getKind();
+    switch (kind) {
+    case BuiltinType::Int:
+        return std::string { "int" };
+    default:
+        return std::string { "TranslateBuiltinType::default" };
+    }
+}
+
+std::string TranslateType(const Type *ty) {
+    if (BuiltinType::classof(ty)) {
+        return TranslateBuiltinType((const BuiltinType *) ty);
+    } else {
+        return std::string { "TranslateType::else" };
+    }
+}
+
+std::string TranslateQualType(const QualType qt) {
+    const Type *ty = qt.getTypePtrOrNull();
+    if (ty != NULL) {
+        return TranslateType(ty);
+    } else {
+        return std::string { "NULL" };
+    }
+}
 
 enum class StmtMode { semicolon, period, none };
 
+std::string Prompt(StmtMode mode) {
+    switch (mode) {
+    case StmtMode::semicolon:
+        return std::string { "_ <- " };
+    case StmtMode::period:
+    case StmtMode::none:
+        return std::string { "" };
+    }
+}
+
+std::string Punct(StmtMode mode) {
+    switch (mode) {
+    case StmtMode::semicolon:
+        return std::string { ";\n" };
+    case StmtMode::period:
+        return std::string { ".\n" };
+    case StmtMode::none:
+        return std::string { "" };
+    }
+}
+
 void TranslateStmt(Stmt *s, StmtMode mode) {
+    if (CompoundStmt::classof(s)) {
+        CompoundStmt *cstmt = (CompoundStmt *) s;
+        
+    } else if (ReturnStmt::classof(s)) {
+        ReturnStmt *rstmt = (ReturnStmt *) s;
+        Expr *e = rstmt->getRetValue();
+        if (e) {
+        } else {
+        }
+        outs() << Prompt(mode) << "return" << Punct(mode);
+    } else {
+        outs() << "TranslateStmt::else\n";
+        s->dump();
+    }
 }
 
 void TranslateFunctionDecl(const FunctionDecl *d) {
@@ -27,7 +88,16 @@ void TranslateFunctionDecl(const FunctionDecl *d) {
         outs() << "(* " << fname << " has no body. *)\n";
     }
 
-    outs() << "Definition " << fname << "\n";
+    outs() << "Definition " << fname;;
+
+    if (d->param_empty()) {
+        outs() << " (_ : value void)";
+    } else {
+    }
+
+    QualType qt_ret = d->getReturnType();
+    std::string str_ret = TranslateQualType(qt_ret);
+    outs() << " : value " << str_ret << " :=\n";
 
     Stmt* body = d->getBody();
     TranslateStmt(body, StmtMode::period);
