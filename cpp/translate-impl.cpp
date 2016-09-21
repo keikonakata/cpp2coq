@@ -1,4 +1,5 @@
 #include "clang/Frontend/ASTConsumers.h"
+#include "clang/AST/Expr.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -64,17 +65,47 @@ std::string Punct(StmtMode mode) {
     }
 }
 
-void TranslateStmt(Stmt *s, StmtMode mode) {
+std::string TranslateExpr(Expr *e) {
+
+    if (IntegerLiteral::classof(e)) {
+        IntegerLiteral *iexpr = (IntegerLiteral *) e;
+        APInt i = iexpr->getValue();
+        return std::string { "int_" + i.toString(10, true) };
+    }
+
+    e->dump();
+    return std::string { "TranslateExpr::else" };
+}
+
+void TranslateStmt(Stmt *s, StmtMode mode = StmtMode::semicolon) {
     if (CompoundStmt::classof(s)) {
         CompoundStmt *cstmt = (CompoundStmt *) s;
-        
+
+        if (cstmt->size() == 0) {
+            outs() << "TranslateStmt::CompoundStmt:0\n";
+            return;
+        }
+
+        for(CompoundStmt::body_iterator b = cstmt->body_begin(), e = cstmt->body_end();
+            b != e; b++) {
+            if (b+1 == e) {
+                TranslateStmt(*b, mode);
+            } else {
+                TranslateStmt(*b);
+            }
+        }
+
     } else if (ReturnStmt::classof(s)) {
         ReturnStmt *rstmt = (ReturnStmt *) s;
+
         Expr *e = rstmt->getRetValue();
         if (e) {
+            std::string ename = TranslateExpr(e);
+            outs() << Prompt(mode) << "return " << ename << Punct(mode);
         } else {
+            outs() << Prompt(mode) << "return" << Punct(mode);
         }
-        outs() << Prompt(mode) << "return" << Punct(mode);
+
     } else {
         outs() << "TranslateStmt::else\n";
         s->dump();
