@@ -1,9 +1,4 @@
-#include "clang/Frontend/ASTConsumers.h"
-#include "clang/AST/Expr.h"
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/FrontendActions.h"
-#include "clang/Tooling/CommonOptionsParser.h"
-#include "clang/Tooling/Tooling.h"
+#include "translate-impl.hpp"
 
 using namespace llvm;
 using namespace clang;
@@ -11,32 +6,80 @@ using namespace clang::tooling;
 
 static llvm::cl::OptionCategory TranslateImplOptions("translate-impl options");
 
+std::string ConcatVector(std::vector<std::string> v, std::string s = "") {
+
+    std::string ret = "";
+    for (auto e : v) {
+        ret += s + e;
+    }
+    return ret;
+}
+
 std::string NameOfFunctionDecl(const FunctionDecl *d) {
+    std::string fname = d->getNameAsString();
+
+    std::vector<std::string> anames;
+    for (auto param : d->parameters()) {
+        anames.emplace_back(TranslateQualType(param->getType(), TypeMode::str));
+    }
+
+    return std::string { fname + ConcatVector(anames, "_") };
+}
+
+std::string NameOfRecordDecl(const RecordDecl *d) {
     return d->getNameAsString();
 }
 
 std::string TranslateBuiltinType(const BuiltinType *ty) {
     BuiltinType::Kind kind = ty->getKind();
     switch (kind) {
+    case BuiltinType::Bool:
+        return std::string { "Bool" };
+    case BuiltinType::UChar:
+        return std::string { "Uchar" };
+    case BuiltinType::UInt:
+        return std::string { "Uint" };
+    case BuiltinType::ULong:
+        return std::string { "Ulong" };
+    case BuiltinType::ULongLong:
+        return std::string { "Ulonglong" };
+    case BuiltinType::Char_S:
+        return std::string { "Char_s" };
     case BuiltinType::Int:
-        return std::string { "int" };
+        return std::string { "Int" };
+    case BuiltinType::Long:
+        return std::string { "Long" };
+    case BuiltinType::LongLong:
+        return std::string { "Longlong" };
+    case BuiltinType::NullPtr:
+        return std::string { "Nullptr" };
     default:
         return std::string { "TranslateBuiltinType::default" };
     }
 }
 
-std::string TranslateType(const Type *ty) {
+std::string TranslateType(const Type *ty, TypeMode mode) {
     if (BuiltinType::classof(ty)) {
         return TranslateBuiltinType((const BuiltinType *) ty);
+    } else if (PointerType::classof(ty)) {
+        std::string name_pointee = TranslateQualType(ty->getPointeeType(), mode);
+
+        switch (mode) {
+        case TypeMode::var:
+            return std::string { "(Loc " + name_pointee + ")" };
+        case TypeMode::str:
+            return std::string { "Loc" + name_pointee };
+        }
     } else {
+        ty->dump();
         return std::string { "TranslateType::else" };
     }
 }
 
-std::string TranslateQualType(const QualType qt) {
+std::string TranslateQualType(const QualType qt, TypeMode mode) {
     const Type *ty = qt.getTypePtrOrNull();
     if (ty != NULL) {
-        return TranslateType(ty);
+        return TranslateType(ty, mode);
     } else {
         return std::string { "NULL" };
     }
@@ -65,12 +108,68 @@ std::string Punct(StmtMode mode) {
     }
 }
 
-std::string TranslateExpr(Expr *e) {
+int count = 0;
 
-    if (IntegerLiteral::classof(e)) {
+std::string GenName(const Type *ty) {
+    return std::string { "tmp_" + std::to_string(count++) };
+}
+
+std::string GenName(QualType qt) {
+    const Type *ty = qt.getTypePtrOrNull();
+    if (ty != NULL) {
+        return GenName(ty);
+    } else {
+        return std::string { "GenName:NULL" };
+    }
+}
+
+std::string GenName(QualType qt, std::string bname) {
+    if (bname == "") {
+        return GenName(qt);
+    } else {
+        return bname;
+    }
+}
+
+std::string BindOrReturn(std::string name, std::string bname) {
+    if (bname == "") {
+        return name;
+    } else {
+        outs() << "let " << bname << " := " << name << " in\n";
+        return bname;
+    }
+}
+
+std::string TranslateExpr(Expr *e, std::string name = "") {
+    QualType qt = e->getType();
+    if (BinaryOperator::classof(e)) {
+        BinaryOperator *bexpr = (BinaryOperator *) e;
+        Expr *lexpr = bexpr->getLHS();
+        Expr *rexpr = bexpr->getRHS();
+
+        std::string lname = TranslateExpr(lexpr);
+        std::string lname_qt = TranslateQualType(lexpr->getType(), TypeMode::str);
+        
+        std::string rname = TranslateExpr(rexpr);
+        std::string rname_qt = TranslateQualType(rexpr->getType(), TypeMode::str);
+
+        BinaryOperator::Opcode kind = bexpr->getOpcode();
+        switch (kind) {
+        case BO_Add:
+            {
+                std::string name_ret = GenName(qt, name);
+                outs() << name_ret << " <- add_" << lname_qt << "_" << rname_qt << " " << lname << " " << rname << ";\n";
+                return name_ret;
+            }
+        default:
+            return std::string { "TranslateExpr::BinaryOperator::default" };
+        }
+
+
+    } else if (IntegerLiteral::classof(e)) {
         IntegerLiteral *iexpr = (IntegerLiteral *) e;
         APInt i = iexpr->getValue();
-        return std::string { "int_" + i.toString(10, true) };
+        return BindOrReturn("int_" + i.toString(10, true), name);
     }
 
     e->dump();
@@ -113,6 +212,8 @@ void TranslateStmt(Stmt *s, StmtMode mode = StmtMode::semicolon) {
 }
 
 void TranslateFunctionDecl(const FunctionDecl *d) {
+    outs() << "\n";
+
     std::string fname = NameOfFunctionDecl(d);
 
     if (!d->hasBody()) {
@@ -124,19 +225,47 @@ void TranslateFunctionDecl(const FunctionDecl *d) {
     if (d->param_empty()) {
         outs() << " (_ : value void)";
     } else {
+        for (auto param : d->parameters()) {
+            std::string pname = param->getNameAsString();
+
+            QualType qt_param = param->getType();
+            std::string sname = TranslateQualType(qt_param);
+
+            outs() << " (" << pname << " : value " << sname << ")";
+
+        }
     }
 
     QualType qt_ret = d->getReturnType();
     std::string str_ret = TranslateQualType(qt_ret);
-    outs() << " : value " << str_ret << " :=\n";
+    outs() << " : result " << str_ret << " :=\n";
 
     Stmt* body = d->getBody();
     TranslateStmt(body, StmtMode::period);
 
 }
 
+void TranslateRecordDecl(RecordDecl *d) {
+    outs() << "\n";
+
+    std::string rname = NameOfRecordDecl(d);
+    outs() << "Module " << rname << ".\n";
+
+    outs() << "End " << rname << ".\n";
+}
+
 void TranslateDecl(const Decl *d) {
-    if (NamedDecl::classof(d)) {
+    if (TypeDecl::classof(d)) {
+        if (TagDecl::classof(d)) {
+            if (RecordDecl::classof(d)) {
+                TranslateRecordDecl((RecordDecl *) d);
+            } else {
+                outs() << "TranslateDecl::TagDecl::else\n";
+            }
+        } else {
+            outs() << "TranslateDecl::TypeDecl::else\n";
+        }
+    } else if (NamedDecl::classof(d)) {
         if (ValueDecl::classof(d)) {
             if (DeclaratorDecl::classof(d)) {
                 if (FunctionDecl::classof(d)) {
