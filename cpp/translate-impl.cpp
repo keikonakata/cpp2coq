@@ -70,6 +70,9 @@ std::string TranslateType(const Type *ty, TypeMode mode) {
         case TypeMode::str:
             return std::string { "Loc" + name_pointee };
         }
+    } else if (SubstTemplateTypeParmType::classof(ty)) {
+        const SubstTemplateTypeParmType * pty = (const SubstTemplateTypeParmType *) ty;
+        return TranslateQualType(pty->getReplacementType(), mode);
     } else {
         ty->dump();
         return std::string { "TranslateType::else" };
@@ -140,6 +143,21 @@ std::string BindOrReturn(std::string name, std::string bname) {
     }
 }
 
+std::string StringOfValueDecl(ValueDecl *vdecl) {
+    if (DeclaratorDecl::classof(vdecl)) {
+        if (VarDecl::classof(vdecl)) {
+            return vdecl->getNameAsString();
+        } else {
+            vdecl->dump();
+            return std::string { "StringOfValueDecl::DeclaratorDecl::else" };
+        }
+    } else {
+        vdecl->dump();
+        return std::string { "StringOfValueDecl::else" };
+    }
+
+}
+
 std::string TranslateExpr(Expr *e, std::string name = "") {
     QualType qt = e->getType();
     if (BinaryOperator::classof(e)) {
@@ -149,7 +167,7 @@ std::string TranslateExpr(Expr *e, std::string name = "") {
 
         std::string lname = TranslateExpr(lexpr);
         std::string lname_qt = TranslateQualType(lexpr->getType(), TypeMode::str);
-        
+
         std::string rname = TranslateExpr(rexpr);
         std::string rname_qt = TranslateQualType(rexpr->getType(), TypeMode::str);
 
@@ -158,14 +176,44 @@ std::string TranslateExpr(Expr *e, std::string name = "") {
         case BO_Add:
             {
                 std::string name_ret = GenName(qt, name);
-                outs() << name_ret << " <- add_" << lname_qt << "_" << rname_qt << " " << lname << " " << rname << ";\n";
+                outs() << name_ret << " <- add_" << lname_qt << "_" << rname_qt << " _ " << lname << " " << rname << ";\n";
                 return name_ret;
             }
         default:
             return std::string { "TranslateExpr::BinaryOperator::default" };
         }
 
+    } else if (CastExpr::classof(e)) {
+        if (ExplicitCastExpr::classof(e)) {
+            return std::string { "TranslateExpr::ExplicitCastExpr" };
+        } else if (ImplicitCastExpr::classof(e)) {
+            ImplicitCastExpr *expr_cast = (ImplicitCastExpr *) e;
 
+            Expr *expr_sub = expr_cast->getSubExpr();
+            std::string name_sub = TranslateExpr(expr_sub);
+
+            CastKind kind = expr_cast->getCastKind();
+            switch (kind) {
+            case CK_LValueToRValue:
+                {
+                    std::string name_new = GenName(qt, name);
+                    outs() << name_new << " <- get _ _ " << name_sub << ";\n";
+                    return name_new;
+                }
+            default:
+                return std::string { "ImplicitCastExpr::else" };
+            }
+        } else {
+            return std::string { "TranslateExpr::ExplicitCastExpr" };
+        }
+    } else if (DeclRefExpr::classof(e)) {
+        DeclRefExpr *dexpr = (DeclRefExpr *) e;
+        ValueDecl *vdecl = dexpr->getDecl();
+        if (vdecl) {
+            return StringOfValueDecl(vdecl);
+        } else {
+            return std::string { "TranslateExpr::DeclRefExpr::null" };
+        }
     } else if (IntegerLiteral::classof(e)) {
         IntegerLiteral *iexpr = (IntegerLiteral *) e;
         APInt i = iexpr->getValue();
@@ -174,6 +222,14 @@ std::string TranslateExpr(Expr *e, std::string name = "") {
 
     e->dump();
     return std::string { "TranslateExpr::else" };
+}
+
+void TranslateDeclStmt(Decl *d) {
+    if (VarDecl::classof(d)) {
+        VarDecl *vdecl = (VarDecl *) d;
+    } else {
+        outs() << "TranslateDeclStmt::else\n";
+    }
 }
 
 void TranslateStmt(Stmt *s, StmtMode mode = StmtMode::semicolon) {
@@ -192,6 +248,13 @@ void TranslateStmt(Stmt *s, StmtMode mode = StmtMode::semicolon) {
             } else {
                 TranslateStmt(*b);
             }
+        }
+
+    } else if (DeclStmt::classof(s)) {
+        DeclStmt *dstmt = (DeclStmt *) s;
+
+        for (auto decl : dstmt->decls()) {
+            TranslateDeclStmt(decl);
         }
 
     } else if (ReturnStmt::classof(s)) {
@@ -245,6 +308,12 @@ void TranslateFunctionDecl(const FunctionDecl *d) {
 
 }
 
+void TranslateFunctionTemplateDecl(FunctionTemplateDecl *d) {
+    for (auto spec : d->specializations()) {
+        TranslateFunctionDecl(spec);
+    }
+}
+
 void TranslateRecordDecl(RecordDecl *d) {
     outs() << "\n";
 
@@ -254,8 +323,23 @@ void TranslateRecordDecl(RecordDecl *d) {
     outs() << "End " << rname << ".\n";
 }
 
+void TranslateVarDecl(const VarDecl *d) {
+    std::string vname = d->getNameAsString();
+    outs() << "Definition " << vname << " :=\n";
+}
+
 void TranslateDecl(const Decl *d) {
-    if (TypeDecl::classof(d)) {
+    if (TemplateDecl::classof(d)) {
+        if (RedeclarableTemplateDecl::classof(d)) {
+            if (FunctionTemplateDecl::classof(d)) {
+                TranslateFunctionTemplateDecl((FunctionTemplateDecl *) d);
+            } else {
+                outs() << "TranslateDecl::RedecralableTemplateDecl::else\n";
+            }
+        } else {
+            outs() << "TranslateDecl::TemplateDecl::else\n";
+        }
+    } else if (TypeDecl::classof(d)) {
         if (TagDecl::classof(d)) {
             if (RecordDecl::classof(d)) {
                 TranslateRecordDecl((RecordDecl *) d);
@@ -270,7 +354,10 @@ void TranslateDecl(const Decl *d) {
             if (DeclaratorDecl::classof(d)) {
                 if (FunctionDecl::classof(d)) {
                     TranslateFunctionDecl((const FunctionDecl *) d);
+                } else if (VarDecl::classof(d)) {
+                    TranslateVarDecl((const VarDecl *) d);
                 } else {
+                    d->dump();
                     outs() << "TranslateDecl::DeclaratorDecl::else\n";
                 }
             } else {
@@ -312,7 +399,6 @@ private:
 class TranslateImplAction : public ASTFrontendAction {
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &Compiler, StringRef file) {
         return std::unique_ptr<ASTConsumer>(new TranslateImplConsumer(Compiler, file));
-                                            
     }
 
 };
