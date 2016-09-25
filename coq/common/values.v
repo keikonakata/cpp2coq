@@ -1,4 +1,5 @@
 Inductive stype : Set :=
+| void : stype
 | Loc : stype -> stype
 (* builtin types *)
 | Bool
