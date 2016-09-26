@@ -1,5 +1,5 @@
 Require Import mathcomp.ssreflect.ssreflect.
-Require Import values.
+Require Import common.values.
 
 Set Implicit Arguments.
 
@@ -13,7 +13,7 @@ Inductive compt (L T : stype) : Set :=
 | error : compt L T.
 
 Definition m (L T : stype) := state -> compt L T.
-Definition result (T : stype) := m void T.
+Definition result (T : stype) := m Void T.
 
 Definition bind (L0 L1 T : stype) (a : m L0 T) (f : value L0 -> m L1 T) : m L1 T:= fun st =>
 match a st with

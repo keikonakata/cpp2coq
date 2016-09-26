@@ -1,5 +1,5 @@
 Inductive stype : Set :=
-| void : stype
+| Void : stype
 | Loc : stype -> stype
 (* builtin types *)
 | Bool
@@ -13,3 +13,4 @@ Inductive stype : Set :=
 | Nullptr.
 
 Parameter value : stype -> Set.
+Extract Constant value => "Pervasives_base.value".
