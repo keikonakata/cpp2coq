@@ -2,3 +2,6 @@
 *.vo
 *.glob
 *.dep
+*.cmo
+*.cmi
+*.aux

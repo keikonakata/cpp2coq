@@ -7,7 +7,8 @@ COQ_LOADS := -Q $(ROOT_DIR)/coq/common common -Q $(ROOT_DIR)/coq/examples exampl
 OCAMLC   := /usr/bin/ocamlc
 OCAMLDEP := /usr/bin/ocamldep
 OCAML_INCLUDE := -I $(ROOT_DIR)/ocaml/common \
-	-I $(ROOT_DIR)/ocaml/extraction/common
+	-I $(ROOT_DIR)/ocaml/extraction/common \
+	-I $(ROOT_DIR)/ocaml/extraction/examples
 
 COQ_FILES = $(shell find $(ROOT_DIR) -name "*.v")
 
@@ -24,21 +25,21 @@ include $(shell find $(ROOT_DIR) -name "*.mk")
 depend : $(COQ_FILES:=.dep) $(OCAML_ML_FILES:=.dep) $(OCAML_MLI_FILES:=.dep)
 
 %.cmo : %.ml
-	$(OCAMLC) -c $<
+	$(OCAMLC) -c $(OCAML_INCLUDE) $<
+
+%.cmi : %.mli
+	$(OCAMLC) -c $(OCAML_INCLUDE) $<
 
 %.vo : %.v
 	$(COQC) $(COQ_LOADS) $<
 
 %.v.dep : %.v
-	cd $(dir $@);\
 	$(COQDEP) $(COQ_LOADS) $< > $@
 
 %.ml.dep : %.ml
-	cd $(dir $@);\
 	$(OCAMLDEP) $(OCAML_INCLUDE) $< > $@
 
 %.mli.dep : %.mli
-	cd $(dir $@);\
 	$(OCAMLDEP) $(OCAML_INCLUDE) $< > $@
 
 -include $(COQ_FILES:=.dep)
