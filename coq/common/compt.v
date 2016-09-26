@@ -4,6 +4,7 @@ Require Import common.values.
 Set Implicit Arguments.
 
 Parameter state : Set.
+Extract Constant state => "Pervasives_base.state".
 
 Inductive compt (L T : stype) : Set :=
 | step : value L -> state ->  compt L T
