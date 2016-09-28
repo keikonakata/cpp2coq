@@ -11,6 +11,7 @@ OCAML_INCLUDE := -I $(ROOT_DIR)/ocaml/common \
 	-I $(ROOT_DIR)/ocaml/extraction/examples
 
 COQ_FILES = $(shell find $(ROOT_DIR) -name "*.v")
+COQ_FILES_EXTRACTION = $(shell find $(ROOT_DIR) -name "extraction.v")
 
 OCAML_ML_FILES = $(shell find $(ROOT_DIR) -name "*.ml")
 OCAML_MLI_FILES = $(shell find $(ROOT_DIR) -name "*.mli")
@@ -18,11 +19,13 @@ OCAML_MLI_FILES = $(shell find $(ROOT_DIR) -name "*.mli")
 top:
 	echo no target
 
-.PHONY : depend
+.PHONY : depend extract
 
 include $(shell find $(ROOT_DIR) -name "*.mk")
 
 depend : $(COQ_FILES:=.dep) $(OCAML_ML_FILES:=.dep) $(OCAML_MLI_FILES:=.dep)
+
+extract : $(COQ_FILES_EXTRACTION:.v=.vo)
 
 %.cmo : %.ml
 	$(OCAMLC) -c $(OCAML_INCLUDE) $<

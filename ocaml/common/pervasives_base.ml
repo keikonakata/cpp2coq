@@ -21,5 +21,7 @@ type value =
 | Longlong of longlong
 | Nullptr of nullptr
 
-type state
+type mitem = Val of value | Ptr of int | Emp
+
+type state = { index : int; space : mitem array}
 
