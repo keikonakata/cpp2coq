@@ -60,15 +60,34 @@ std::string TranslateBuiltinType(const BuiltinType *ty) {
 
 std::string TranslateType(const Type *ty, TypeMode mode) {
     if (BuiltinType::classof(ty)) {
-        return TranslateBuiltinType((const BuiltinType *) ty);
-    } else if (PointerType::classof(ty)) {
-        std::string name_pointee = TranslateQualType(ty->getPointeeType(), mode);
-
         switch (mode) {
+        case TypeMode::param:
+            {
+                std::string tname = TranslateBuiltinType((const BuiltinType *) ty);
+                return std::string { "(Loc " + tname + ")" };
+            }
         case TypeMode::var:
-            return std::string { "(Loc " + name_pointee + ")" };
+            return TranslateBuiltinType((const BuiltinType *) ty);
         case TypeMode::str:
-            return std::string { "Loc" + name_pointee };
+            return TranslateBuiltinType((const BuiltinType *) ty);
+        }
+    } else if (PointerType::classof(ty)) {
+        switch (mode) {
+        case TypeMode::param:
+            {
+                std::string pname = TranslateQualType(ty->getPointeeType(), TypeMode::var);
+                return std::string { "(Loc (Loc " + pname + "))" };
+            }
+        case TypeMode::var:
+            {
+                std::string pname = TranslateQualType(ty->getPointeeType(), mode);
+                return std::string { "(Loc " + pname + ")" };
+            }
+        case TypeMode::str:
+            {
+                std::string pname = TranslateQualType(ty->getPointeeType(), mode);
+                return std::string { "Loc" + pname };
+            }
         }
     } else if (SubstTemplateTypeParmType::classof(ty)) {
         const SubstTemplateTypeParmType * pty = (const SubstTemplateTypeParmType *) ty;
@@ -292,7 +311,7 @@ void TranslateFunctionDecl(const FunctionDecl *d) {
             std::string pname = param->getNameAsString();
 
             QualType qt_param = param->getType();
-            std::string sname = TranslateQualType(qt_param);
+            std::string sname = TranslateQualType(qt_param, TypeMode::param);
 
             outs() << " (" << pname << " : value " << sname << ")";
 

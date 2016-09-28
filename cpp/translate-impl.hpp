@@ -6,7 +6,7 @@
 #include "clang/Tooling/Tooling.h"
 
 
-enum class TypeMode { var, str };
+enum class TypeMode { param, var, str };
 std::string TranslateQualType(clang::QualType qt, TypeMode mode = TypeMode::var);
 
 void TranslateDecl(const clang::Decl *d);
