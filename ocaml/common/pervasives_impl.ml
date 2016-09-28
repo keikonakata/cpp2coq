@@ -1,3 +1,6 @@
+open Compt
+open Pervasives_base
+
 let add_Int_Int sty l r st =
   match l with
   | Int i ->
