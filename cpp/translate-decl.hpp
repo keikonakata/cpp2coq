@@ -6,4 +6,4 @@
 
 #include "translate.hpp"
 
-class TranslateImpl : public Translate {};
+class translateDecl : public Translate {};
