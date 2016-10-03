@@ -192,7 +192,7 @@ void TranslateStmt(Stmt *s, StmtMode mode = StmtMode::semicolon) {
     }
 }
 
-void Translate::TranslateFunctionDecl(const FunctionDecl *d) {
+void TranslateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
@@ -226,7 +226,7 @@ void Translate::TranslateFunctionDecl(const FunctionDecl *d) {
 
 }
 
-void Translate::TranslateVarDecl(const VarDecl *d) {
+void TranslateImpl::TranslateVarDecl(const VarDecl *d) {
     std::string vname = d->getNameAsString();
     outs() << "Definition " << vname << " :=\n";
 }

@@ -6,12 +6,12 @@ using namespace clang::tooling;
 
 static llvm::cl::OptionCategory TranslateDeclOptions("translate-decl options");
 
-void Translate::TranslateVarDecl(const VarDecl *d) {
+void translateDecl::TranslateVarDecl(const VarDecl *d) {
     std::string vname = d->getNameAsString();
     outs() << "Parameter " << vname << " :=\n";
 }
 
-void Translate::TranslateFunctionDecl(const FunctionDecl *d) {
+void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
@@ -38,7 +38,37 @@ void Translate::TranslateFunctionDecl(const FunctionDecl *d) {
 
     QualType qt_ret = d->getReturnType();
     std::string str_ret = TranslateQualType(qt_ret, TypeMode::var);
-    outs() << " : result " << str_ret << ".\n";
+    outs() << " : fanswer " << str_ret << ".\n";
+
+    std::string name = "name";
+    //std::string fname = ToStubFile(NameOfFile(d)) + "." + NameOfPath(d) + "." + NameOfDecl(d);
+    outs() << "Extract Constant " << fname << " => \"";
+    if (d->param_empty()) {
+        outs() << "fun (v : value) => fun (st : state) => ";
+        outs() << "call_ (" << name << " v) st\n";
+    } else {
+        for (auto param : d->parameters()) {
+            outs() << "fun (" << param->getNameAsString() << " : value) => ";
+        }
+
+        outs() << "fun (st : state) => ";
+        for (auto param : d->parameters()) {
+            std::string pname = param->getNameAsString();
+            QualType qt_param = param->getType();
+
+            if (1) {
+                std::string sname = TranslateQualType(qt_param, TypeMode::var);
+
+                outs() << "let " << pname << " = alloc_with_value " << sname << " " << pname << " in\n";
+            }
+
+        }
+        outs() << "call_ (" << name;
+        for (auto param : d-> parameters()) {
+            outs() << " " << param->getNameAsString();
+        }
+        outs() << ")" << " st\n";
+    }
 
 }
 

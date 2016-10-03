@@ -6,8 +6,14 @@
 
 #include "translate.hpp"
 
-class translateDecl : public Translate
+class translateQuirk : public Translate
 {
+    const clang::SourceManager *sm;
+
     void virtual TranslateFunctionDecl(const FunctionDecl *d);
     void virtual TranslateVarDecl(const VarDecl *d);
+
+public:
+    translateQuirk(const clang::SourceManager *sm);
 };
+

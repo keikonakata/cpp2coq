@@ -6,4 +6,8 @@
 
 #include "translate.hpp"
 
-class TranslateImpl : public Translate {};
+class TranslateImpl : public Translate
+{
+    void virtual TranslateFunctionDecl(const FunctionDecl *d);
+    void virtual TranslateVarDecl(const VarDecl *d);
+};
