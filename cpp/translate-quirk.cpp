@@ -11,39 +11,21 @@ void translateQuirk::TranslateVarDecl(const VarDecl *d) {
     outs() << "(* let " << vname << " = *)\n";
 }
 
-std::string NameOfPath(const FunctionDecl *d) {
-    return std::string { "" };
-}
-
-std::string NameOfFile(const FunctionDecl *d, const SourceManager *sm) {
-
-    FunctionTemplateDecl *ftdecl = d->getPrimaryTemplate();
-    if (ftdecl) {
-        return std::string { "NameOfFile::ftdecl is not null" };
-    }
-
-    SourceLocation sloc = d->getOuterLocStart();
-    return sm->getFilename(sloc);
-}
-
-
 void translateQuirk::TranslateFunctionDecl(const FunctionDecl *d) {
     outs() << "\n";
 
-    outs() << NameOfFile(d, sm) << "\n";
+    std::string fname_stub = StubFile(NameOfFile(d, sm));
+    std::string fname_impl = ImplFile(NameOfFile(d, sm));
+    std::string name = NameOfPath(d) + NameOfFunctionDecl(d);
 
-    // std::string fname_stub = ToStubFile(NameOfFile(d));
-    // std::string fname_impl = ToImpleFile(NameOfFile(d));
-    // std::string name = NameOfPath(d) + "." + NameOfDecl(d);
+    std::string sname = fname_impl + "." + name;
+    std::string tname = fname_stub + "." + name;
 
-    // std::string sname = fname_stub + "." + name;
-    // std::string tname = fname_impl + "." + name;
+    if (!d->hasBody()) {
+        outs() << "(* " << name << " has no body. *)\n";
+    }
 
-    // if (!d->hasBody()) {
-    //     outs() << "(* " << name << " has no body. *)\n";
-    // }
-
-    // outs() << "let _ = " << tname << " := " << sname << ";;\n";;
+    outs() << "let _ = " << tname << " := " << sname << ";;\n";;
 
 }
 

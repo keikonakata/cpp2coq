@@ -20,7 +20,19 @@ void translateStub::TranslateFunctionDecl(const FunctionDecl *d) {
         outs() << "(* " << fname << " has no body. *)\n";
     }
 
-    outs() << "let " << fname << " = ref (fun _ -> assert false)\n";;
+    outs() << "let " << fname << " :";
+
+    if (d->param_empty()) {
+        outs() << "(value -> m) ref";
+    } else {
+        outs() << "(";
+        for (auto param : d->parameters()) {
+            outs() << "value -> ";
+        }
+        outs() << "m) ref";
+    }
+
+    outs() << " = ref (fun _ -> assert false)\n";;
 
 }
 

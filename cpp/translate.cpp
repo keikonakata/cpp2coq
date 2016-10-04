@@ -3,6 +3,44 @@
 using namespace llvm;
 using namespace clang;
 
+std::string NameOfPath(const FunctionDecl *d) {
+    return std::string { "" };
+}
+
+std::string NameOfFile(const FunctionDecl *d, const SourceManager *sm) {
+
+    FunctionTemplateDecl *ftdecl = d->getPrimaryTemplate();
+    if (ftdecl) {
+        return std::string { "NameOfFile::ftdecl is not null" };
+    }
+
+    SourceLocation sloc = d->getOuterLocStart();
+
+    std::string name = sm->getFilename(sloc);
+    size_t pos = 0;
+    while ((pos = name.find("/")) != std::string::npos) {
+        name.erase(0, pos + 1);
+    }
+
+    pos = name.find(".");
+    if (pos == std::string::npos) {
+        return std::string { "NameOfFile::dot not found" };
+    }
+    name.erase(pos, name.length()-1);
+
+    return name;
+}
+
+std::string StubFile(std::string s) {
+    s[0] = toupper(s[0]);
+    return std::string { s + "_stub" };
+}
+
+std::string ImplFile(std::string s) {
+    s[0] = toupper(s[0]);
+    return std::string { s + "_impl" };
+}
+
 std::string ConcatVector(std::vector<std::string> v, std::string s) {
 
     std::string ret = "";
