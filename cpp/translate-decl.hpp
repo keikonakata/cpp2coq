@@ -8,6 +8,11 @@
 
 class translateDecl : public Translate
 {
+    const clang::SourceManager *sm;
+
     void virtual TranslateFunctionDecl(const FunctionDecl *d);
     void virtual TranslateVarDecl(const VarDecl *d);
+
+public:
+    translateDecl(const clang::SourceManager *sm);
 };

@@ -6,6 +6,39 @@ using namespace clang::tooling;
 
 static llvm::cl::OptionCategory TranslateDeclOptions("translate-decl options");
 
+
+bool IsCallByLocation(const Type *ty) {
+    if (BuiltinType::classof(ty)) {
+        return true;
+    } else if (PointerType::classof(ty)) {
+        return true;
+    } else if (ReferenceType::classof(ty)) {
+        return false;
+    } else if (TagType::classof(ty)) {
+        if (RecordType::classof(ty)) {
+            return true;
+        } else {
+            outs() << "IsCallByLocation::TagType::else\n";
+            return false;
+        }
+    } else {
+        outs() << "IsCallByLocation::else\n";
+        return false;
+    }
+
+}
+
+bool IsCallByLocation(QualType qt) {
+    const Type *ty = qt.getTypePtrOrNull();
+    if (ty != NULL) {
+        return IsCallByLocation(ty);
+    } else {
+        outs() << "IsCallByLocation::NULL\n";
+        return false;
+    }
+}
+
+
 void translateDecl::TranslateVarDecl(const VarDecl *d) {
     std::string vname = d->getNameAsString();
     outs() << "Parameter " << vname << " :=\n";
@@ -20,7 +53,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
         outs() << "(* " << fname << " has no body. *)\n";
     }
 
-    outs() << "Parameter " << fname;;
+    outs() << "Parameter " << fname << " : forall";;
 
     if (d->param_empty()) {
         outs() << " (_ : value void)";
@@ -38,39 +71,40 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
 
     QualType qt_ret = d->getReturnType();
     std::string str_ret = TranslateQualType(qt_ret, TypeMode::var);
-    outs() << " : fanswer " << str_ret << ".\n";
+    outs() << ", fanswer " << str_ret << ".\n";
 
-    std::string name = "name";
-    //std::string fname = ToStubFile(NameOfFile(d)) + "." + NameOfPath(d) + "." + NameOfDecl(d);
+    std::string name_impl = StubFile(NameOfFile(d, sm)) + "." + NameOfPath(d) + NameOfFunctionDecl(d);
     outs() << "Extract Constant " << fname << " => \"";
     if (d->param_empty()) {
-        outs() << "fun (v : value) => fun (st : state) => ";
-        outs() << "call_ (" << name << " v) st\n";
+        outs() << "fun (v : value) -> fun (st : state) -> ";
+        outs() << "call_ (" << name_impl << " v) st\n";
     } else {
         for (auto param : d->parameters()) {
-            outs() << "fun (" << param->getNameAsString() << " : value) => ";
+            outs() << "fun (" << param->getNameAsString() << " : value) -> ";
         }
 
-        outs() << "fun (st : state) => ";
+        outs() << "fun (st : state) -> ";
         for (auto param : d->parameters()) {
             std::string pname = param->getNameAsString();
             QualType qt_param = param->getType();
 
-            if (1) {
+            if (IsCallByLocation(qt_param)) {
                 std::string sname = TranslateQualType(qt_param, TypeMode::var);
 
                 outs() << "let " << pname << " = alloc_with_value " << sname << " " << pname << " in\n";
             }
 
         }
-        outs() << "call_ (" << name;
+        outs() << "call_ (" << name_impl;
         for (auto param : d-> parameters()) {
             outs() << " " << param->getNameAsString();
         }
-        outs() << ")" << " st\n";
+        outs() << ")" << " st\".\n";
     }
 
 }
+
+translateDecl::translateDecl(const clang::SourceManager *sm_) : sm(sm_) {}
 
 class TranslateDeclConsumer : public ASTConsumer {
 
@@ -82,7 +116,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateDecl().TranslateDeclContext(context.getTranslationUnitDecl());
+        translateDecl(&context.getSourceManager()).TranslateDeclContext(context.getTranslationUnitDecl());
     }
 
 private:
