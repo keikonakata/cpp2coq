@@ -1,12 +1,53 @@
+open Values
 open Compt
 open Pervasives_base
 
+let ttt = V_void ()
+let tt = V_Bool true
+let ff = V_Bool false
+
+let size_of_stype sty =
+  match sty with
+  | Void
+  | Loc(_)
+  | Bool
+  | Uchar
+  | Ulong
+  | Ulonglong
+  | Char_s
+  | Int
+  | Long
+  | Longlong
+  | Nullptr -> assert false
+
+let salloc sty_l sty_t st =
+  let size = size_of_stype sty_l in
+  let current_loc = st.index in
+  assert false
+
+let halloc sty_l sty_t st = assert false
+
+let sput sty_l sty_t lc v st = assert false
+let hput sty_l sty_t lc v st = assert false
+
+let sget sty_l sty_t lc st = assert false
+let hget sty_l sty_t lc st = assert false
+
+let salloc_with_value sty v st = assert false
+
+let call sty_l sty_t f st =
+  match f st with
+  | Coq_ret(v, st') -> Coq_step(v, st')
+  | _ -> assert false
+
+let call_ f st = call Void Void f st
+
 let add_Int_Int sty l r st =
   match l with
-  | Int i ->
+  | V_Int i ->
      begin
        match r with
-       | Int j -> Coq_step(Int (i+j), st)
+       | V_Int j -> Coq_step(V_Int (i+j), st)
        | _ -> assert false
      end
   | _ -> assert false
