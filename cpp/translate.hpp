@@ -32,7 +32,7 @@ class Translate {
 
     void virtual TranslateVarDecl(const VarDecl *d);
 
-    void TranslateRecordDecl(RecordDecl *d);
+    void virtual TranslateRecordDecl(RecordDecl *d);
 
     void TranslateFunctionTemplateDecl(FunctionTemplateDecl *d);
 

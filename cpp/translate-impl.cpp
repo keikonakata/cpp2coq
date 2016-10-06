@@ -100,6 +100,26 @@ std::string TranslateExpr(Expr *e, std::string name = "") {
         default:
             return std::string { "TranslateExpr::BinaryOperator::default" };
         }
+    } else if (CallExpr::classof(e)) {
+        CallExpr *cexpr = (CallExpr *) e;
+        std::string name_ret = GenName(qt, name);
+
+        Expr* callee = cexpr->getCallee();
+        std::string name_callee = TranslateExpr(callee);
+
+        unsigned n = cexpr->getNumArgs();
+        if (n == 0) {
+            outs() << name_ret << " <- call _ (" << name_callee << " ttt);\n";
+        } else {
+            std::vector<std::string> anames;
+            for (auto arg : cexpr->arguments()) {
+                std::string aname = TranslateExpr(arg);
+                anames.emplace_back(aname);
+            }
+
+            outs() << name_ret << " <- call _ (" << name_callee << " " << ConcatVector(anames, " ") << ");\n";
+        }
+        return name_ret;
 
     } else if (CastExpr::classof(e)) {
         if (ExplicitCastExpr::classof(e)) {
@@ -136,6 +156,11 @@ std::string TranslateExpr(Expr *e, std::string name = "") {
         IntegerLiteral *iexpr = (IntegerLiteral *) e;
         APInt i = iexpr->getValue();
         return BindOrReturn("int_" + i.toString(10, true), name);
+    } else if (MemberExpr::classof(e)) {
+        MemberExpr *mexpr = (MemberExpr *) e;
+        std::string bname = TranslateExpr(mexpr->getBase());
+        ValueDecl *vdecl = mexpr->getMemberDecl();
+        return bname;
     }
 
     e->dump();
@@ -145,6 +170,7 @@ std::string TranslateExpr(Expr *e, std::string name = "") {
 void TranslateDeclStmt(Decl *d) {
     if (VarDecl::classof(d)) {
         VarDecl *vdecl = (VarDecl *) d;
+        outs() << "TranslateDeclStmt\n";
     } else {
         outs() << "TranslateDeclStmt::else\n";
     }
@@ -174,7 +200,9 @@ void TranslateStmt(Stmt *s, StmtMode mode = StmtMode::semicolon) {
         for (auto decl : dstmt->decls()) {
             TranslateDeclStmt(decl);
         }
-
+    } else if (Expr::classof(s)) {
+        std::string name = TranslateExpr((Expr *) s);
+        outs() << Prompt(mode) << "step _ ttt" << Punct(mode);
     } else if (ReturnStmt::classof(s)) {
         ReturnStmt *rstmt = (ReturnStmt *) s;
 
@@ -199,6 +227,7 @@ void TranslateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
 
     if (!d->hasBody()) {
         outs() << "(* " << fname << " has no body. *)\n";
+        return;
     }
 
     outs() << "Definition " << fname;;

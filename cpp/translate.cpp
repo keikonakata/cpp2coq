@@ -78,6 +78,15 @@ std::string TranslateBuiltinType(const BuiltinType *ty) {
     }
 }
 
+std::string TranslateRecordType(const RecordType *ty, TypeMode mode) {
+    RecordDecl *rdecl = ty->getDecl();
+    if (rdecl) {
+        return rdecl->getNameAsString();
+    }
+
+    return std::string { "TranslateRecordType:null" };
+}
+
 std::string TranslateType(const Type *ty, TypeMode mode) {
     if (BuiltinType::classof(ty)) {
         switch (mode) {
@@ -109,9 +118,43 @@ std::string TranslateType(const Type *ty, TypeMode mode) {
                 return std::string { "Loc" + pname };
             }
         }
+    } else if (ReferenceType::classof(ty)) {
+        QualType pointee = ty->getPointeeType();
+        std::string pname = TranslateQualType(pointee, mode);
+        if (LValueReferenceType::classof(ty)) {
+            switch (mode) {
+            case TypeMode::param:
+                return std::string { "(Loc " + pname + ")" };
+            case TypeMode::var:
+                return std::string { "(Loc " + pname + ")" };
+            case TypeMode::str:
+                return std::string { "LRef" + pname };
+            }
+        } else if (RValueReferenceType::classof(ty)) {
+            switch (mode) {
+            case TypeMode::param:
+                return std::string { "(Loc " + pname + ")" };
+            case TypeMode::var:
+                return std::string { "(Loc " + pname + ")" };
+            case TypeMode::str:
+                return std::string { "RRef" + pname };
+            }
+        } else {
+            ty->dump();
+            return std::string { "TranslateType::ReferenceType::else" };
+        }
     } else if (SubstTemplateTypeParmType::classof(ty)) {
         const SubstTemplateTypeParmType * pty = (const SubstTemplateTypeParmType *) ty;
         return TranslateQualType(pty->getReplacementType(), mode);
+    } else if (TagType::classof(ty)) {
+            if (RecordType::classof(ty)) {
+                return TranslateRecordType((const RecordType *) ty, mode);
+            } else if (EnumType::classof(ty)) {
+                return std::string { "TranslateType::EnumType" };
+            } else {
+                ty->dump();
+                return std::string { "TranslateType::TagType::else" };
+            }
     } else {
         ty->dump();
         return std::string { "TranslateType::else" };
@@ -149,6 +192,10 @@ void Translate::TranslateFunctionTemplateDecl(FunctionTemplateDecl *d) {
     }
 
 void Translate::TranslateRecordDecl(RecordDecl *d) {
+    if (d->isInjectedClassName()) {
+        return;
+    }
+
     outs() << "\n";
 
     std::string rname = NameOfRecordDecl(d);
@@ -158,6 +205,7 @@ void Translate::TranslateRecordDecl(RecordDecl *d) {
         TranslateDecl(decl);
     }
 
+    outs() << "\n";
     outs() << "End " << rname << ".\n";
 }
 

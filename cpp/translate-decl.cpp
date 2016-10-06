@@ -91,7 +91,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
             if (IsCallByLocation(qt_param)) {
                 std::string sname = TranslateQualType(qt_param, TypeMode::var);
 
-                outs() << "let " << pname << " = alloc_with_value " << sname << " " << pname << " in\n";
+                outs() << "let " << pname << " = salloc_with_value " << sname << " " << pname << " in\n";
             }
 
         }
