@@ -15,6 +15,8 @@ Inductive compt (L T : stype) : Set :=
 
 Definition m (L T : stype) := state -> compt L T.
 Definition result (T : stype) := m Void T.
+Parameter fanswer : stype -> Set.
+Extract Constant fanswer => "m".
 
 Definition bind (L0 L1 T : stype) (a : m L0 T) (f : value L0 -> m L1 T) : m L1 T:= fun st =>
 match a st with
