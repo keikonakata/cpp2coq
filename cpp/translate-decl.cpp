@@ -73,7 +73,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
     std::string str_ret = TranslateQualType(qt_ret, TypeMode::var);
     outs() << ", fanswer " << str_ret << ".\n";
 
-    std::string name_impl = StubFile(NameOfFile(d, sm)) + "." + NameOfPath(d) + NameOfFunctionDecl(d);
+    std::string name_impl = StubFile(FileOfFunctionDecl(d, sm)) + "." + PathOfFunctionDecl(d);
     outs() << "Extract Constant " << fname << " => \"";
     if (d->param_empty()) {
         outs() << "fun (v : value) -> fun (st : state) -> ";
@@ -104,7 +104,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
 
 }
 
-translateDecl::translateDecl(const clang::SourceManager *sm_) : sm(sm_) {}
+translateDecl::translateDecl(const clang::SourceManager *sm_) : Translate(sm_) {}
 
 class TranslateDeclConsumer : public ASTConsumer {
 

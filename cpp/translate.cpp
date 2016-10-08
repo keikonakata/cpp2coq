@@ -3,20 +3,51 @@
 using namespace llvm;
 using namespace clang;
 
-std::string NameOfPath(const FunctionDecl *d) {
-    return std::string { "" };
+void PathOfDeclContextRec(const DeclContext *dcxt, std::vector<std::string> &names) {
+    if (!dcxt) {
+        return;
+    } else {
+        PathOfDeclContextRec(dcxt->getParent(), names);
+    }
+
+    if (dcxt->isNamespace()) {
+        PathOfDeclContextRec(dcxt->getParent(), names);
+    } else if (dcxt->isRecord()) {
+        names.emplace_back(NameOfRecordDecl((RecordDecl *) TagDecl::castFromDeclContext(dcxt)));
+    } else if (dcxt->isTranslationUnit()) {
+        PathOfDeclContextRec(dcxt->getParent(), names);
+    } else {
+        names.emplace_back("PathOfDeclContextRec::else");
+    }
+
 }
 
-std::string NameOfFile(const FunctionDecl *d, const SourceManager *sm) {
+// dcxt may be a nullptr
+std::string PathOfDeclContext(const DeclContext *dcxt, std::string sep) {
+    std::vector<std::string> names;
+    PathOfDeclContextRec(dcxt, names);
+    return ConcatVector(names, sep);
+}
+
+std::string PathOfFunctionDecl(const FunctionDecl *fdecl) {
+    const DeclContext *dcxt = fdecl->getParent();
+    if (dcxt) {
+        return std::string { PathOfDeclContext(dcxt) + "." + NameOfFunctionDecl(fdecl) };
+    } else {
+        return NameOfFunctionDecl(fdecl);
+    }
+}
+
+std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager *sm) {
 
     FunctionTemplateDecl *ftdecl = d->getPrimaryTemplate();
     if (ftdecl) {
-        return std::string { "NameOfFile::ftdecl is not null" };
+        return std::string { "FileOfFunctionDecl::ftdecl is not null" };
     }
 
     SourceLocation sloc = d->getOuterLocStart();
-
     std::string name = sm->getFilename(sloc);
+
     size_t pos = 0;
     while ((pos = name.find("/")) != std::string::npos) {
         name.erase(0, pos + 1);
@@ -24,11 +55,16 @@ std::string NameOfFile(const FunctionDecl *d, const SourceManager *sm) {
 
     pos = name.find(".");
     if (pos == std::string::npos) {
-        return std::string { "NameOfFile::dot not found" };
+        return std::string { "FileOfFunctionDecl::dot not found" };
     }
     name.erase(pos, name.length()-1);
 
     return name;
+}
+
+std::string DeclFile(std::string s) {
+    s[0] = toupper(s[0]);
+    return std::string { s + "_decl" };
 }
 
 std::string StubFile(std::string s) {
@@ -81,10 +117,16 @@ std::string TranslateBuiltinType(const BuiltinType *ty) {
 std::string TranslateRecordType(const RecordType *ty, TypeMode mode) {
     RecordDecl *rdecl = ty->getDecl();
     if (rdecl) {
-        return rdecl->getNameAsString();
+        switch (mode) {
+        case TypeMode::param:
+            return std::string { "(Loc " + rdecl->getNameAsString() + ")" };
+        case TypeMode::var:
+        case TypeMode::str:
+            return rdecl->getNameAsString();
     }
 
     return std::string { "TranslateRecordType:null" };
+    }
 }
 
 std::string TranslateType(const Type *ty, TypeMode mode) {
@@ -253,6 +295,9 @@ void Translate::TranslateDecl(const Decl *d) {
     }
 }
 
+void Translate::TranslateFunctionDecl(const FunctionDecl *d) {}
+void Translate::TranslateVarDecl(const VarDecl *d) {}
+
 void Translate::TranslateDeclContext(const DeclContext *dc) {
     for (auto decl : dc->decls()) {
         TranslateDecl(decl);
@@ -260,3 +305,4 @@ void Translate::TranslateDeclContext(const DeclContext *dc) {
 }
 
 
+Translate::Translate(const SourceManager *sm_) : sm(sm_) { }

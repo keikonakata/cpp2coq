@@ -36,6 +36,8 @@ void translateStub::TranslateFunctionDecl(const FunctionDecl *d) {
 
 }
 
+translateStub::translateStub(const clang::SourceManager *sm_) : Translate(sm_) {}
+
 class TranslateStubConsumer : public ASTConsumer {
 
 public:
@@ -46,7 +48,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateStub().TranslateDeclContext(context.getTranslationUnitDecl());
+        translateStub(&context.getSourceManager()).TranslateDeclContext(context.getTranslationUnitDecl());
     }
 
 private:

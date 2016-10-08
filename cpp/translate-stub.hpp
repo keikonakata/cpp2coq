@@ -11,4 +11,6 @@ class translateStub : public Translate
     void virtual TranslateFunctionDecl(const FunctionDecl *d);
     void virtual TranslateVarDecl(const VarDecl *d);
 
+public:
+    translateStub(const SourceManager *sm);
 };

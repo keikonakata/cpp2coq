@@ -4,9 +4,7 @@ using namespace llvm;
 using namespace clang;
 using namespace clang::tooling;
 
-static llvm::cl::OptionCategory TranslateImplOptions("translate-impl options");
-
-enum class StmtMode { semicolon, period, none };
+static llvm::cl::OptionCategory translateImplOptions("translate-impl options");
 
 std::string Prompt(StmtMode mode) {
     switch (mode) {
@@ -76,7 +74,27 @@ std::string StringOfValueDecl(ValueDecl *vdecl) {
 
 }
 
-std::string TranslateExpr(Expr *e, std::string name = "") {
+std::string NameOfFieldDecl(FieldDecl *fdecl) {
+    return fdecl->getNameAsString();
+}
+
+std::string PathOfFieldDecl(FieldDecl *fdecl) {
+    return std::string { PathOfDeclContext(fdecl->getParent()) + "." + NameOfFieldDecl(fdecl) };
+}
+
+std::string AccessPathOfValueDecl(ValueDecl *vdecl, const SourceManager *sm) {
+    if (FieldDecl::classof(vdecl)) {
+        return PathOfFieldDecl((FieldDecl *) vdecl);
+    } else if (CXXMethodDecl::classof(vdecl)) {
+        FunctionDecl *fdecl = (FunctionDecl *) vdecl;
+        return std::string
+            { DeclFile(FileOfFunctionDecl(fdecl, sm)) + "." + PathOfFunctionDecl(fdecl) };
+    } else {
+        return std::string { "PathOfMemberDecl::else" };
+    }
+}
+
+std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
     QualType qt = e->getType();
     if (BinaryOperator::classof(e)) {
         BinaryOperator *bexpr = (BinaryOperator *) e;
@@ -160,7 +178,7 @@ std::string TranslateExpr(Expr *e, std::string name = "") {
         MemberExpr *mexpr = (MemberExpr *) e;
         std::string bname = TranslateExpr(mexpr->getBase());
         ValueDecl *vdecl = mexpr->getMemberDecl();
-        return bname;
+        return std::string { "(" + AccessPathOfValueDecl(vdecl, sm) + " " + bname + ")" };
     }
 
     e->dump();
@@ -176,7 +194,7 @@ void TranslateDeclStmt(Decl *d) {
     }
 }
 
-void TranslateStmt(Stmt *s, StmtMode mode = StmtMode::semicolon) {
+void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
     if (CompoundStmt::classof(s)) {
         CompoundStmt *cstmt = (CompoundStmt *) s;
 
@@ -220,7 +238,7 @@ void TranslateStmt(Stmt *s, StmtMode mode = StmtMode::semicolon) {
     }
 }
 
-void TranslateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
+void translateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
@@ -255,22 +273,24 @@ void TranslateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
 
 }
 
-void TranslateImpl::TranslateVarDecl(const VarDecl *d) {
+void translateImpl::TranslateVarDecl(const VarDecl *d) {
     std::string vname = d->getNameAsString();
     outs() << "Definition " << vname << " :=\n";
 }
 
-class TranslateImplConsumer : public ASTConsumer {
+translateImpl::translateImpl(const clang::SourceManager *sm_) : Translate(sm_) {}
+
+class translateImplConsumer : public ASTConsumer {
 
 public:
 
-    explicit TranslateImplConsumer(CompilerInstance &_compiler, StringRef file)
+    explicit translateImplConsumer(CompilerInstance &_compiler, StringRef file)
         : fname(file), compiler(_compiler)
     {
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        TranslateImpl().TranslateDeclContext(context.getTranslationUnitDecl());
+        translateImpl(&context.getSourceManager()).TranslateDeclContext(context.getTranslationUnitDecl());
     }
 
 private:
@@ -279,18 +299,18 @@ private:
 
 };
 
-class TranslateImplAction : public ASTFrontendAction {
+class translateImplAction : public ASTFrontendAction {
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &Compiler, StringRef file) {
-        return std::unique_ptr<ASTConsumer>(new TranslateImplConsumer(Compiler, file));
+        return std::unique_ptr<ASTConsumer>(new translateImplConsumer(Compiler, file));
     }
 
 };
 
 int main(int argc, const char **argv) {
-    CommonOptionsParser op(argc, argv, TranslateImplOptions);
+    CommonOptionsParser op(argc, argv, translateImplOptions);
     ClangTool tool(op.getCompilations(), op.getSourcePathList());
 
-    int result = tool.run(newFrontendActionFactory<TranslateImplAction>().get());
+    int result = tool.run(newFrontendActionFactory<translateImplAction>().get());
 
     return result;
 }

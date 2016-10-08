@@ -4,17 +4,19 @@ using namespace llvm;
 using namespace clang;
 
 
+std::string PathOfDeclContext(const DeclContext *dcxt, std::string sep = ".");
+
 std::string ConcatVector(std::vector<std::string> v, std::string s = "");
 
 enum class TypeMode { param, var, str };
 
-std::string NameOfPath(const FunctionDecl *d);
+std::string PathOfFunctionDecl(const FunctionDecl *fdecl);
 
-std::string NameOfFile(const FunctionDecl *d, const SourceManager *sm);
+std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager *sm);
 
-std::string StubFile(std::string s);
-
+std::string DeclFile(std::string s);
 std::string ImplFile(std::string s);
+std::string StubFile(std::string s);
 
 std::string TranslateQualType(const QualType qt, TypeMode mode);
 
@@ -38,7 +40,11 @@ class Translate {
 
     void TranslateDecl(const Decl *d);
 
+protected:
+    const SourceManager *sm;
+
 public:
     void TranslateDeclContext(const DeclContext *dc);
+    Translate(const SourceManager *sm);
 
 };
