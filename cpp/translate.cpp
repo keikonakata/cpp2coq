@@ -88,7 +88,6 @@ std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager &sm) {
 }
 
 std::string DeclFile(std::string s) {
-    s[0] = toupper(s[0]);
     return std::string { s + "_decl" };
 }
 

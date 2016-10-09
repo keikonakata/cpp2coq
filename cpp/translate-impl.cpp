@@ -125,18 +125,14 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         Expr* callee = cexpr->getCallee();
         std::string name_callee = TranslateExpr(callee);
 
-        unsigned n = cexpr->getNumArgs();
-        if (n == 0) {
-            outs() << name_ret << " <- call _ (" << name_callee << " ttt);\n";
-        } else {
-            std::vector<std::string> anames;
-            for (auto arg : cexpr->arguments()) {
-                std::string aname = TranslateExpr(arg);
-                anames.emplace_back(aname);
-            }
-
-            outs() << name_ret << " <- call _ (" << name_callee << " " << ConcatVector(anames, " ") << ");\n";
+        std::vector<std::string> anames;
+        for (auto arg : cexpr->arguments()) {
+            std::string aname = TranslateExpr(arg);
+            anames.emplace_back(aname);
         }
+
+        outs() << name_ret << " <- call _ _ (" << name_callee << ConcatVector2(anames, " ") << ");\n";
+
         return name_ret;
 
     } else if (CastExpr::classof(e)) {
@@ -176,16 +172,11 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         outs() << name_new << " <- salloc " << name_ty << " _;\n";
         anames.emplace_back(name_new);
 
-
-        if (cexpr->getNumArgs() == 0) {
-            anames.emplace_back("ttt");
-        } else {
-            for (arg : cexpr->arguments()) {
-                anames.emplace_back(TranslateExpr(arg));
-            }
+        for (arg : cexpr->arguments()) {
+            anames.emplace_back(TranslateExpr(arg));
         }
 
-        outs() << name_new << " <- call _ _ (" << fname << ConcatVector2(anames, " ") << ");\n";
+        outs() << "_ <- call _ _ (" << fname << ConcatVector2(anames, " ") << ");\n";
         return name_new;
     } else if (CXXNewExpr::classof(e)) {
         CXXNewExpr *nexpr = (CXXNewExpr *) e;
@@ -315,9 +306,9 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
         Expr *e = rstmt->getRetValue();
         if (e) {
             std::string ename = TranslateExpr(e);
-            outs() << Prompt(mode) << "return " << ename << Punct(mode);
+            outs() << Prompt(mode) << "ret _ " << ename << Punct(mode);
         } else {
-            outs() << Prompt(mode) << "return" << Punct(mode);
+            outs() << Prompt(mode) << "ret _ ttt" << Punct(mode);
         }
 
     } else {
@@ -346,18 +337,14 @@ void translateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
         }
     }
 
-    if (d->param_empty()) {
-        outs() << " (_ : value void)";
-    } else {
-        for (auto param : d->parameters()) {
-            std::string pname = param->getNameAsString();
+    for (auto param : d->parameters()) {
+        std::string pname = param->getNameAsString();
 
-            QualType qt_param = param->getType();
-            std::string sname = TranslateQualType(qt_param, TypeMode::param);
+        QualType qt_param = param->getType();
+        std::string sname = TranslateQualType(qt_param, TypeMode::param);
 
-            outs() << " (" << pname << " : value " << sname << ")";
+        outs() << " (" << pname << " : value " << sname << ")";
 
-        }
     }
 
     QualType qt_ret = d->getReturnType();
