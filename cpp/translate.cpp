@@ -3,6 +3,31 @@
 using namespace llvm;
 using namespace clang;
 
+std::string ConcatVector(std::vector<std::string> v, std::string s) {
+
+    std::size_t size = v.size();
+
+    if (size == 0) {
+        return std::string { "" };
+    } else {
+        std::string ret = v[0];
+        for (auto i = 1; i < size; i++) {
+            ret += s + v[i];
+        }
+        return ret;
+    }
+}
+
+std::string ConcatVector2(std::vector<std::string> v, std::string s) {
+    std::string ret = "";
+
+    for (auto elm : v) {
+        ret += s + elm;
+    };
+
+    return ret;
+}
+
 void PathOfDeclContextRec(const DeclContext *dcxt, std::vector<std::string> &names) {
     if (!dcxt) {
         return;
@@ -38,7 +63,7 @@ std::string PathOfFunctionDecl(const FunctionDecl *fdecl) {
     }
 }
 
-std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager *sm) {
+std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager &sm) {
 
     FunctionTemplateDecl *ftdecl = d->getPrimaryTemplate();
     if (ftdecl) {
@@ -46,7 +71,7 @@ std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager *sm) {
     }
 
     SourceLocation sloc = d->getOuterLocStart();
-    std::string name = sm->getFilename(sloc);
+    std::string name = sm.getFilename(sloc);
 
     size_t pos = 0;
     while ((pos = name.find("/")) != std::string::npos) {
@@ -77,18 +102,11 @@ std::string ImplFile(std::string s) {
     return std::string { s + "_impl" };
 }
 
-std::string ConcatVector(std::vector<std::string> v, std::string s) {
-
-    std::string ret = "";
-    for (auto e : v) {
-        ret += s + e;
-    }
-    return ret;
-}
-
 std::string TranslateBuiltinType(const BuiltinType *ty) {
     BuiltinType::Kind kind = ty->getKind();
     switch (kind) {
+    case BuiltinType::Void:
+        return std::string { "void" };
     case BuiltinType::Bool:
         return std::string { "Bool" };
     case BuiltinType::UChar:
@@ -119,10 +137,10 @@ std::string TranslateRecordType(const RecordType *ty, TypeMode mode) {
     if (rdecl) {
         switch (mode) {
         case TypeMode::param:
-            return std::string { "(Loc " + rdecl->getNameAsString() + ")" };
+            return std::string { "(Loc " + NameOfRecordDecl(rdecl) + ")" };
         case TypeMode::var:
         case TypeMode::str:
-            return rdecl->getNameAsString();
+            return NameOfRecordDecl(rdecl);
     }
 
     return std::string { "TranslateRecordType:null" };
@@ -162,24 +180,21 @@ std::string TranslateType(const Type *ty, TypeMode mode) {
         }
     } else if (ReferenceType::classof(ty)) {
         QualType pointee = ty->getPointeeType();
-        std::string pname = TranslateQualType(pointee, mode);
         if (LValueReferenceType::classof(ty)) {
             switch (mode) {
             case TypeMode::param:
-                return std::string { "(Loc " + pname + ")" };
             case TypeMode::var:
-                return std::string { "(Loc " + pname + ")" };
+                return std::string { "(Loc " + TranslateQualType(pointee, TypeMode::var) + ")" };
             case TypeMode::str:
-                return std::string { "LRef" + pname };
+                return std::string { "LRef" + TranslateQualType(pointee, TypeMode::str) };
             }
         } else if (RValueReferenceType::classof(ty)) {
             switch (mode) {
             case TypeMode::param:
-                return std::string { "(Loc " + pname + ")" };
             case TypeMode::var:
-                return std::string { "(Loc " + pname + ")" };
+                return std::string { "(Loc " + TranslateQualType(pointee, TypeMode::var) + ")" };
             case TypeMode::str:
-                return std::string { "RRef" + pname };
+                return std::string { "RRef" + TranslateQualType(pointee, TypeMode::str) };
             }
         } else {
             ty->dump();
@@ -213,14 +228,24 @@ std::string TranslateQualType(const QualType qt, TypeMode mode) {
 }
 
 std::string NameOfFunctionDecl(const FunctionDecl *d) {
-    std::string fname = d->getNameAsString();
+
+    std::string fname;
+    if (CXXConstructorDecl::classof(d)) {
+        fname = "ctor";
+    } else if (CXXConversionDecl::classof(d)) {
+        fname = "TO FIX::cxxconversion";
+    } else if (CXXDestructorDecl::classof(d)) {
+        fname = "dtor";
+    } else {
+        fname = d->getNameAsString();
+    }
 
     std::vector<std::string> anames;
     for (auto param : d->parameters()) {
         anames.emplace_back(TranslateQualType(param->getType(), TypeMode::str));
     }
 
-    return std::string { fname + ConcatVector(anames, "_") };
+    return std::string { fname + ConcatVector2(anames, "_") };
 }
 
 std::string NameOfRecordDecl(const RecordDecl *d) {
@@ -305,4 +330,4 @@ void Translate::TranslateDeclContext(const DeclContext *dc) {
 }
 
 
-Translate::Translate(const SourceManager *sm_) : sm(sm_) { }
+Translate::Translate(ASTContext &cxt) : _cxt(cxt) { }

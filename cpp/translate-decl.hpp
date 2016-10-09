@@ -12,5 +12,5 @@ class translateDecl : public Translate
     void virtual TranslateVarDecl(const VarDecl *d);
 
 public:
-    translateDecl(const clang::SourceManager *sm);
+    translateDecl(ASTContext &cxt);
 };

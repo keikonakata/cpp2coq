@@ -6,13 +6,16 @@ using namespace clang;
 
 std::string PathOfDeclContext(const DeclContext *dcxt, std::string sep = ".");
 
+// concatenate 'v', separated by 's'
 std::string ConcatVector(std::vector<std::string> v, std::string s = "");
+// concatenate 'v', separated and prefixed by 's'
+std::string ConcatVector2(std::vector<std::string> v, std::string s = "");
 
 enum class TypeMode { param, var, str };
 
 std::string PathOfFunctionDecl(const FunctionDecl *fdecl);
 
-std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager *sm);
+std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager &sm);
 
 std::string DeclFile(std::string s);
 std::string ImplFile(std::string s);
@@ -38,13 +41,12 @@ class Translate {
 
     void TranslateFunctionTemplateDecl(FunctionTemplateDecl *d);
 
-    void TranslateDecl(const Decl *d);
-
 protected:
-    const SourceManager *sm;
+    ASTContext &_cxt;
+    void TranslateDecl(const Decl *d);
 
 public:
     void TranslateDeclContext(const DeclContext *dc);
-    Translate(const SourceManager *sm);
+    Translate(ASTContext &cxt);
 
 };

@@ -6,37 +6,59 @@ using namespace clang::tooling;
 
 static llvm::cl::OptionCategory TranslateStubOptions("translate-stub options");
 
+void translateStub::TranslateRecordDecl(RecordDecl *d) {
+    if (d->isInjectedClassName()) {
+        return;
+    }
+
+    outs() << "\n";
+
+    std::string rname = NameOfRecordDecl(d);
+    outs() << "module " << rname << " = struct\n";
+
+    for (auto decl : d->decls()) {
+        TranslateDecl(decl);
+    }
+
+    outs() << "\n";
+    outs() << "end\n";
+}
+
+
 void translateStub::TranslateVarDecl(const VarDecl *d) {
     std::string vname = d->getNameAsString();
     outs() << "let " << vname << " = \n";
 }
 
 void translateStub::TranslateFunctionDecl(const FunctionDecl *d) {
+    if (!d->hasBody()) return;
+
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
 
-    if (!d->hasBody()) {
-        outs() << "(* " << fname << " has no body. *)\n";
+    outs() << "let " << fname << " : (";
+
+    if (CXXMethodDecl::classof(d)) {
+        CXXMethodDecl *cxxmdecl = (CXXMethodDecl *) d;
+        if (cxxmdecl->isInstance()) {
+            outs() << "value -> ";
+        }
     }
 
-    outs() << "let " << fname << " :";
-
     if (d->param_empty()) {
-        outs() << "(value -> m) ref";
+        outs() << "value -> ";
     } else {
-        outs() << "(";
         for (auto param : d->parameters()) {
             outs() << "value -> ";
         }
-        outs() << "m) ref";
     }
 
-    outs() << " = ref (fun _ -> assert false)\n";;
+    outs() << "m) ref = ref (fun _ -> assert false)\n";
 
 }
 
-translateStub::translateStub(const clang::SourceManager *sm_) : Translate(sm_) {}
+translateStub::translateStub(ASTContext &cxt) : Translate(cxt) {}
 
 class TranslateStubConsumer : public ASTConsumer {
 
@@ -48,7 +70,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateStub(&context.getSourceManager()).TranslateDeclContext(context.getTranslationUnitDecl());
+        translateStub(context).TranslateDeclContext(context.getTranslationUnitDecl());
     }
 
 private:
@@ -67,6 +89,9 @@ class TranslateStubAction : public ASTFrontendAction {
 int main(int argc, const char **argv) {
     CommonOptionsParser op(argc, argv, TranslateStubOptions);
     ClangTool tool(op.getCompilations(), op.getSourcePathList());
+
+    outs() << "open Values\n";
+    outs() << "open Compt\n";
 
     int result = tool.run(newFrontendActionFactory<TranslateStubAction>().get());
 

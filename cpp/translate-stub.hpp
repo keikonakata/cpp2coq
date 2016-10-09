@@ -10,7 +10,8 @@ class translateStub : public Translate
 {
     void virtual TranslateFunctionDecl(const FunctionDecl *d);
     void virtual TranslateVarDecl(const VarDecl *d);
+    void virtual TranslateRecordDecl(RecordDecl *d);
 
 public:
-    translateStub(const SourceManager *sm);
+    translateStub(ASTContext &cxt);
 };

@@ -14,8 +14,8 @@ void translateQuirk::TranslateVarDecl(const VarDecl *d) {
 void translateQuirk::TranslateFunctionDecl(const FunctionDecl *d) {
     outs() << "\n";
 
-    std::string fname_stub = StubFile(FileOfFunctionDecl(d, sm));
-    std::string fname_impl = ImplFile(FileOfFunctionDecl(d, sm));
+    std::string fname_stub = StubFile(FileOfFunctionDecl(d, _cxt.getSourceManager()));
+    std::string fname_impl = ImplFile(FileOfFunctionDecl(d, _cxt.getSourceManager()));
     std::string name = PathOfFunctionDecl(d);
 
     std::string sname = fname_impl + "." + name;
@@ -29,7 +29,7 @@ void translateQuirk::TranslateFunctionDecl(const FunctionDecl *d) {
 
 }
 
-translateQuirk::translateQuirk(const SourceManager *sm_) : Translate(sm_){}
+translateQuirk::translateQuirk(ASTContext &cxt) : Translate(cxt){}
 
 class TranslateQuirkConsumer : public ASTConsumer {
 
@@ -41,7 +41,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateQuirk(&context.getSourceManager()).TranslateDeclContext(context.getTranslationUnitDecl());
+        translateQuirk(context).TranslateDeclContext(context.getTranslationUnitDecl());
     }
 
 private:

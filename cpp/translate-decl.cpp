@@ -51,9 +51,18 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
 
     if (!d->hasBody()) {
         outs() << "(* " << fname << " has no body. *)\n";
+        return;
     }
 
     outs() << "Parameter " << fname << " : forall";;
+
+    if (CXXMethodDecl::classof(d)) {
+        CXXMethodDecl *cxxmdecl = (CXXMethodDecl *) d;
+        if (cxxmdecl->isInstance()) {
+            QualType qt = cxxmdecl->getThisType(_cxt);
+            outs() << " (this : value " << TranslateQualType(qt, TypeMode::var) << ")";
+        }
+    }
 
     if (d->param_empty()) {
         outs() << " (_ : value void)";
@@ -73,7 +82,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
     std::string str_ret = TranslateQualType(qt_ret, TypeMode::var);
     outs() << ", fanswer " << str_ret << ".\n";
 
-    std::string name_impl = StubFile(FileOfFunctionDecl(d, sm)) + "." + PathOfFunctionDecl(d);
+    std::string name_impl = StubFile(FileOfFunctionDecl(d, _cxt.getSourceManager())) + "." + PathOfFunctionDecl(d);
     outs() << "Extract Constant " << fname << " => \"";
     if (d->param_empty()) {
         outs() << "fun (v : value) -> fun (st : state) -> ";
@@ -104,7 +113,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
 
 }
 
-translateDecl::translateDecl(const clang::SourceManager *sm_) : Translate(sm_) {}
+translateDecl::translateDecl(ASTContext &cxt) : Translate(cxt) {}
 
 class TranslateDeclConsumer : public ASTConsumer {
 
@@ -116,7 +125,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateDecl(&context.getSourceManager()).TranslateDeclContext(context.getTranslationUnitDecl());
+        translateDecl(context).TranslateDeclContext(context.getTranslationUnitDecl());
     }
 
 private:
