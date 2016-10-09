@@ -6,12 +6,22 @@ using namespace clang::tooling;
 
 static llvm::cl::OptionCategory TranslateQuirkOptions("translate-quirk options");
 
+void translateQuirk::TranslateRecordDecl(RecordDecl *d) {
+    if (d->isInjectedClassName())  return;
+
+    for (auto decl : d->decls()) {
+        TranslateDecl(decl);
+    }
+}
+
 void translateQuirk::TranslateVarDecl(const VarDecl *d) {
     std::string vname = d->getNameAsString();
     outs() << "(* let " << vname << " = *)\n";
 }
 
 void translateQuirk::TranslateFunctionDecl(const FunctionDecl *d) {
+    if (!d->hasBody()) return;
+
     outs() << "\n";
 
     std::string fname_stub = StubFile(FileOfFunctionDecl(d, _cxt.getSourceManager()));
@@ -20,10 +30,6 @@ void translateQuirk::TranslateFunctionDecl(const FunctionDecl *d) {
 
     std::string sname = fname_impl + "." + name;
     std::string tname = fname_stub + "." + name;
-
-    if (!d->hasBody()) {
-        outs() << "(* " << name << " has no body. *)\n";
-    }
 
     outs() << "let _ = " << tname << " := " << sname << ";;\n";;
 

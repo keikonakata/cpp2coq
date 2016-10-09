@@ -33,6 +33,8 @@ std::string NameOfRecordDecl(const RecordDecl *d);
 
 class Translate {
 
+    void virtual TranslateFieldDecl(const FieldDecl *d);
+
     void virtual TranslateFunctionDecl(const FunctionDecl *d);
 
     void virtual TranslateVarDecl(const VarDecl *d);

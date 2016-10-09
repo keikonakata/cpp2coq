@@ -310,7 +310,9 @@ void Translate::TranslateDecl(const Decl *d) {
     } else if (NamedDecl::classof(d)) {
         if (ValueDecl::classof(d)) {
             if (DeclaratorDecl::classof(d)) {
-                if (FunctionDecl::classof(d)) {
+                if (FieldDecl::classof(d)) {
+                    TranslateFieldDecl((const FieldDecl *) d);
+                } else if (FunctionDecl::classof(d)) {
                     TranslateFunctionDecl((const FunctionDecl *) d);
                 } else if (VarDecl::classof(d)) {
                     TranslateVarDecl((const VarDecl *) d);
@@ -329,7 +331,10 @@ void Translate::TranslateDecl(const Decl *d) {
     }
 }
 
+void Translate::TranslateFieldDecl(const FieldDecl *d) {}
+
 void Translate::TranslateFunctionDecl(const FunctionDecl *d) {}
+
 void Translate::TranslateVarDecl(const VarDecl *d) {}
 
 void Translate::TranslateDeclContext(const DeclContext *dc) {

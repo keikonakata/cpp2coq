@@ -79,7 +79,7 @@ std::string NameOfFieldDecl(FieldDecl *fdecl) {
 }
 
 std::string PathOfFieldDecl(FieldDecl *fdecl) {
-    return std::string { PathOfDeclContext(fdecl->getParent()) + "." + NameOfFieldDecl(fdecl) };
+    return std::string { PathOfDeclContext(fdecl->getParent()) + NameOfFieldDecl(fdecl) };
 }
 
 std::string AccessPathOfValueDecl(ValueDecl *vdecl, const SourceManager &sm) {
