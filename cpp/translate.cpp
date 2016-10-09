@@ -28,6 +28,16 @@ std::string ConcatVector2(std::vector<std::string> v, std::string s) {
     return ret;
 }
 
+std::string ConcatVector3(std::vector<std::string> v, std::string s) {
+    std::string ret = "";
+
+    for (auto elm : v) {
+        ret += elm + s;
+    };
+
+    return ret;
+}
+
 void PathOfDeclContextRec(const DeclContext *dcxt, std::vector<std::string> &names) {
     if (!dcxt) {
         return;
@@ -51,13 +61,13 @@ void PathOfDeclContextRec(const DeclContext *dcxt, std::vector<std::string> &nam
 std::string PathOfDeclContext(const DeclContext *dcxt, std::string sep) {
     std::vector<std::string> names;
     PathOfDeclContextRec(dcxt, names);
-    return ConcatVector(names, sep);
+    return ConcatVector3(names, sep);
 }
 
 std::string PathOfFunctionDecl(const FunctionDecl *fdecl) {
     const DeclContext *dcxt = fdecl->getParent();
     if (dcxt) {
-        return std::string { PathOfDeclContext(dcxt) + "." + NameOfFunctionDecl(fdecl) };
+        return std::string { PathOfDeclContext(dcxt) + NameOfFunctionDecl(fdecl) };
     } else {
         return NameOfFunctionDecl(fdecl);
     }

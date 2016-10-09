@@ -98,11 +98,20 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
         if (IsCallByLocation(qt_param)) {
             std::string sname = TranslateQualType(qt_param, TypeMode::var);
 
-            outs() << "let " << pname << " = salloc_with_value " << sname << " " << pname << " in\n";
+            outs() << "let " << pname << " = Pervasives_impl.salloc_with_init_ " << sname << " " << pname << " st in\n";
         }
 
     }
-    outs() << "call_ (" << name_impl;
+    outs() << "Pervasives_impl.call_ (!" << name_impl;
+
+    if (CXXMethodDecl::classof(d)) {
+        CXXMethodDecl *cxxmdecl = (CXXMethodDecl *) d;
+        if (cxxmdecl->isInstance()) {
+            QualType qt = cxxmdecl->getThisType(_cxt);
+            outs() << " this";
+        }
+    }
+
     for (auto param : d-> parameters()) {
         outs() << " " << param->getNameAsString();
     }
