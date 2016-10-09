@@ -45,14 +45,11 @@ void translateDecl::TranslateVarDecl(const VarDecl *d) {
 }
 
 void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
+    if (!d->hasBody()) return;
+
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
-
-    if (!d->hasBody()) {
-        outs() << "(* " << fname << " has no body. *)\n";
-        return;
-    }
 
     outs() << "Parameter " << fname << " : forall";;
 
@@ -64,18 +61,14 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
         }
     }
 
-    if (d->param_empty()) {
-        outs() << " (_ : value void)";
-    } else {
-        for (auto param : d->parameters()) {
-            std::string pname = param->getNameAsString();
+    for (auto param : d->parameters()) {
+        std::string pname = param->getNameAsString();
 
-            QualType qt_param = param->getType();
-            std::string sname = TranslateQualType(qt_param, TypeMode::var);
+        QualType qt_param = param->getType();
+        std::string sname = TranslateQualType(qt_param, TypeMode::var);
 
-            outs() << " (" << pname << " : value " << sname << ")";
+        outs() << " (" << pname << " : value " << sname << ")";
 
-        }
     }
 
     QualType qt_ret = d->getReturnType();
@@ -84,32 +77,36 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
 
     std::string name_impl = StubFile(FileOfFunctionDecl(d, _cxt.getSourceManager())) + "." + PathOfFunctionDecl(d);
     outs() << "Extract Constant " << fname << " => \"";
-    if (d->param_empty()) {
-        outs() << "fun (v : value) -> fun (st : state) -> ";
-        outs() << "call_ (" << name_impl << " v) st\n";
-    } else {
-        for (auto param : d->parameters()) {
-            outs() << "fun (" << param->getNameAsString() << " : value) -> ";
+
+    if (CXXMethodDecl::classof(d)) {
+        CXXMethodDecl *cxxmdecl = (CXXMethodDecl *) d;
+        if (cxxmdecl->isInstance()) {
+            QualType qt = cxxmdecl->getThisType(_cxt);
+            outs() << "fun (this : value) -> ";
         }
-
-        outs() << "fun (st : state) -> ";
-        for (auto param : d->parameters()) {
-            std::string pname = param->getNameAsString();
-            QualType qt_param = param->getType();
-
-            if (IsCallByLocation(qt_param)) {
-                std::string sname = TranslateQualType(qt_param, TypeMode::var);
-
-                outs() << "let " << pname << " = salloc_with_value " << sname << " " << pname << " in\n";
-            }
-
-        }
-        outs() << "call_ (" << name_impl;
-        for (auto param : d-> parameters()) {
-            outs() << " " << param->getNameAsString();
-        }
-        outs() << ")" << " st\".\n";
     }
+
+    for (auto param : d->parameters()) {
+        outs() << "fun (" << param->getNameAsString() << " : value) -> ";
+    }
+
+    outs() << "fun (st : state) -> ";
+    for (auto param : d->parameters()) {
+        std::string pname = param->getNameAsString();
+        QualType qt_param = param->getType();
+
+        if (IsCallByLocation(qt_param)) {
+            std::string sname = TranslateQualType(qt_param, TypeMode::var);
+
+            outs() << "let " << pname << " = salloc_with_value " << sname << " " << pname << " in\n";
+        }
+
+    }
+    outs() << "call_ (" << name_impl;
+    for (auto param : d-> parameters()) {
+        outs() << " " << param->getNameAsString();
+    }
+    outs() << ") st\".\n";
 
 }
 
@@ -144,6 +141,9 @@ class TranslateDeclAction : public ASTFrontendAction {
 int main(int argc, const char **argv) {
     CommonOptionsParser op(argc, argv, TranslateDeclOptions);
     ClangTool tool(op.getCompilations(), op.getSourcePathList());
+
+    outs() << "Require Import common.values.\n";
+    outs() << "Require Import common.compt.\n";
 
     int result = tool.run(newFrontendActionFactory<TranslateDeclAction>().get());
 

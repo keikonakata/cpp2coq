@@ -46,12 +46,8 @@ void translateStub::TranslateFunctionDecl(const FunctionDecl *d) {
         }
     }
 
-    if (d->param_empty()) {
+    for (auto param : d->parameters()) {
         outs() << "value -> ";
-    } else {
-        for (auto param : d->parameters()) {
-            outs() << "value -> ";
-        }
     }
 
     outs() << "m) ref = ref (fun _ -> assert false)\n";

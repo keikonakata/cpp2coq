@@ -106,7 +106,7 @@ std::string TranslateBuiltinType(const BuiltinType *ty) {
     BuiltinType::Kind kind = ty->getKind();
     switch (kind) {
     case BuiltinType::Void:
-        return std::string { "void" };
+        return std::string { "Void" };
     case BuiltinType::Bool:
         return std::string { "Bool" };
     case BuiltinType::UChar:
