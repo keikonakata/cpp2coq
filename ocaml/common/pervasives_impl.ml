@@ -2,7 +2,7 @@ open Values
 open Compt
 open Pervasives_base
 
-let ttt = V_void ()
+let ttt = V_Void ()
 let tt = V_Bool true
 let ff = V_Bool false
 
@@ -33,7 +33,8 @@ let hput sty_l sty_t lc v st = assert false
 let sget sty_l sty_t lc st = assert false
 let hget sty_l sty_t lc st = assert false
 
-let salloc_with_value sty v st = assert false
+let salloc_with_init sty_l sty_t v st = assert false
+let salloc_with_init_ sty_l v st = salloc_with_init sty_l Void v st
 
 let call sty_l sty_t f st =
   match f st with
