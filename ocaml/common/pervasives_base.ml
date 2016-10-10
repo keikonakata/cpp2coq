@@ -1,4 +1,3 @@
-type void = unit
 type loc = int
 type uchar = int
 type ulong = int
@@ -6,10 +5,9 @@ type ulonglong = int
 type char_s = int
 type long = int
 type longlong = int
-type nullptr = int
 
 type value =
-| V_Void of void
+| V_Void
 | V_Loc of loc
 | V_Bool of bool
 | V_Uchar of uchar
@@ -19,7 +17,7 @@ type value =
 | V_Int of int
 | V_Long of long
 | V_Longlong of longlong
-| V_Nullptr of nullptr
+| V_Nullptr
 
 type mitem = Val of value | Ptr of int | Emp
 
