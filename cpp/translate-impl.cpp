@@ -84,11 +84,13 @@ std::string PathOfFieldDecl(FieldDecl *fdecl) {
 
 std::string AccessPathOfValueDecl(ValueDecl *vdecl, const SourceManager &sm) {
     if (FieldDecl::classof(vdecl)) {
-        return PathOfFieldDecl((FieldDecl *) vdecl);
+        FieldDecl *fdecl = (FieldDecl *) vdecl;
+        return std::string
+            { DeclFile(FileOfDecl(fdecl, sm)) + "." + PathOfFieldDecl(fdecl) };
     } else if (CXXMethodDecl::classof(vdecl)) {
         FunctionDecl *fdecl = (FunctionDecl *) vdecl;
         return std::string
-            { DeclFile(FileOfFunctionDecl(fdecl, sm)) + "." + PathOfFunctionDecl(fdecl) };
+            { DeclFile(FileOfDecl(fdecl, sm)) + "." + PathOfFunctionDecl(fdecl) };
     } else {
         return std::string { "PathOfMemberDecl::else" };
     }

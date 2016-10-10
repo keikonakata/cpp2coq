@@ -15,7 +15,8 @@ enum class TypeMode { param, var, str };
 
 std::string PathOfFunctionDecl(const FunctionDecl *fdecl);
 
-std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager &sm);
+std::string FileOfDecl(const FieldDecl *d, const SourceManager &sm);
+std::string FileOfDecl(const FunctionDecl *d, const SourceManager &sm);
 
 std::string DeclFile(std::string s);
 std::string ImplFile(std::string s);

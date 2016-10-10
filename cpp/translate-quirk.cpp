@@ -24,8 +24,8 @@ void translateQuirk::TranslateFunctionDecl(const FunctionDecl *d) {
 
     outs() << "\n";
 
-    std::string fname_stub = StubFile(FileOfFunctionDecl(d, _cxt.getSourceManager()));
-    std::string fname_impl = ImplFile(FileOfFunctionDecl(d, _cxt.getSourceManager()));
+    std::string fname_stub = StubFile(FileOfDecl(d, _cxt.getSourceManager()));
+    std::string fname_impl = ImplFile(FileOfDecl(d, _cxt.getSourceManager()));
     std::string name = PathOfFunctionDecl(d);
 
     std::string sname = fname_impl + "." + name;

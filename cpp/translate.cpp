@@ -1,5 +1,6 @@
 #include "translate.hpp"
 
+using namespace std;
 using namespace llvm;
 using namespace clang;
 
@@ -73,28 +74,45 @@ std::string PathOfFunctionDecl(const FunctionDecl *fdecl) {
     }
 }
 
-std::string FileOfFunctionDecl(const FunctionDecl *d, const SourceManager &sm) {
+string notdir(string name) {
+    size_t pos = 0;
+
+    while ((pos = name.find("/")) != std::string::npos) {
+        name.erase(0, pos + 1);
+    }
+
+    return name;
+}
+
+string basename(string name) {
+    size_t pos = name.find(".");
+    if (pos == std::string::npos) {
+        return std::string { "FileOfDecl::dot not found" };
+    }
+    name.erase(pos, name.length()-1);
+
+    return name;
+}
+
+std::string FileOfDecl(const FieldDecl *d, const SourceManager &sm) {
+    SourceLocation sloc = d->getOuterLocStart();
+    std::string name = sm.getFilename(sloc);
+
+    return basename(notdir(name));
+}
+
+std::string FileOfDecl(const FunctionDecl *d, const SourceManager &sm) {
 
     FunctionTemplateDecl *ftdecl = d->getPrimaryTemplate();
     if (ftdecl) {
-        return std::string { "FileOfFunctionDecl::ftdecl is not null" };
+        return std::string { "FileOfDecl::ftdecl is not null" };
     }
 
     SourceLocation sloc = d->getOuterLocStart();
     std::string name = sm.getFilename(sloc);
 
-    size_t pos = 0;
-    while ((pos = name.find("/")) != std::string::npos) {
-        name.erase(0, pos + 1);
-    }
+    return basename(notdir(name));
 
-    pos = name.find(".");
-    if (pos == std::string::npos) {
-        return std::string { "FileOfFunctionDecl::dot not found" };
-    }
-    name.erase(pos, name.length()-1);
-
-    return name;
 }
 
 std::string DeclFile(std::string s) {
@@ -143,17 +161,18 @@ std::string TranslateBuiltinType(const BuiltinType *ty) {
 
 std::string TranslateRecordType(const RecordType *ty, TypeMode mode) {
     RecordDecl *rdecl = ty->getDecl();
+    const DeclContext *cxt = rdecl->getParent();
     if (rdecl) {
         switch (mode) {
         case TypeMode::param:
-            return std::string { "(Loc " + NameOfRecordDecl(rdecl) + ")" };
+            return std::string { "(Loc " + PathOfDeclContext(cxt, "") + NameOfRecordDecl(rdecl) + ")" };
         case TypeMode::var:
         case TypeMode::str:
-            return NameOfRecordDecl(rdecl);
+            return std::string { PathOfDeclContext(cxt, "") + NameOfRecordDecl(rdecl) };
+        }
     }
 
     return std::string { "TranslateRecordType:null" };
-    }
 }
 
 std::string TranslateType(const Type *ty, TypeMode mode) {

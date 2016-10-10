@@ -1,5 +1,6 @@
 #include "translate-decl.hpp"
 
+using namespace std;
 using namespace llvm;
 using namespace clang;
 using namespace clang::tooling;
@@ -44,6 +45,19 @@ void translateDecl::TranslateVarDecl(const VarDecl *d) {
     outs() << "Parameter " << vname << " :=\n";
 }
 
+void translateDecl::TranslateFieldDecl(const FieldDecl *d) {
+    string fname = d->getNameAsString();
+    const RecordDecl *rdecl = d->getParent();
+    QualType qt = d->getType();
+
+    outs() << "\n";
+
+    outs() << "Parameter " << fname << " : value (Loc " << ") ->";
+
+    outs() << " value (Loc " << TranslateQualType(qt, TypeMode::var) << ").\n";
+    outs() << "Extract Constant " << fname << " => \"fun (this : value) ->\".\n";
+}
+
 void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
     if (!d->hasBody()) return;
 
@@ -51,7 +65,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
 
     std::string fname = NameOfFunctionDecl(d);
 
-    outs() << "Parameter " << fname << " : forall";;
+    outs() << "Parameter " << fname << " : forall";
 
     if (CXXMethodDecl::classof(d)) {
         CXXMethodDecl *cxxmdecl = (CXXMethodDecl *) d;
@@ -75,7 +89,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
     std::string str_ret = TranslateQualType(qt_ret, TypeMode::var);
     outs() << ", fanswer " << str_ret << ".\n";
 
-    std::string name_impl = StubFile(FileOfFunctionDecl(d, _cxt.getSourceManager())) + "." + PathOfFunctionDecl(d);
+    std::string name_impl = StubFile(FileOfDecl(d, _cxt.getSourceManager())) + "." + PathOfFunctionDecl(d);
     outs() << "Extract Constant " << fname << " => \"";
 
     if (CXXMethodDecl::classof(d)) {

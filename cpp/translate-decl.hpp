@@ -8,8 +8,9 @@
 
 class translateDecl : public Translate
 {
-    void virtual TranslateFunctionDecl(const FunctionDecl *d);
-    void virtual TranslateVarDecl(const VarDecl *d);
+    void TranslateFunctionDecl(const FunctionDecl *d) override;
+    void TranslateVarDecl(const VarDecl *d) override;
+    void TranslateFieldDecl(const FieldDecl *d) override;
 
 public:
     translateDecl(ASTContext &cxt);
