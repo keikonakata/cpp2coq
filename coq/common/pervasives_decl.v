@@ -30,4 +30,7 @@ Parameter add_Int_Int : forall T, value Int -> value Int -> m Int T.
 Extract Constant add_Int_Int => "Pervasives_impl.add_Int_Int".
 
 Parameter int_0 : value Int.
+Extract Constant int_0 => "Pervasives_impl.int_0".
+
 Parameter int_1 : value Int.
+Extract Constant int_1 => "Pervasives_impl.int_1".
