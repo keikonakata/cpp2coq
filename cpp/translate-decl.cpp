@@ -112,7 +112,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
         if (IsCallByLocation(qt_param)) {
             std::string sname = TranslateQualType(qt_param, TypeMode::var);
 
-            outs() << "let " << pname << " = Pervasives_impl.salloc_with_init_ " << sname << " " << pname << " st in\n";
+            outs() << "let Coq_step(" << pname << ", st) = Pervasives_impl.salloc_with_init_ " << sname << " " << pname << " st in\n";
         }
 
     }
