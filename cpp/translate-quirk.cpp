@@ -47,7 +47,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateQuirk(context).TranslateDeclContext(context.getTranslationUnitDecl());
+        translateQuirk(context).TranslateTranslationUnitDecl(context.getTranslationUnitDecl());
     }
 
 private:

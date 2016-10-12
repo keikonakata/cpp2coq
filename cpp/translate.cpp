@@ -246,8 +246,9 @@ std::string TranslateType(const Type *ty, TypeMode mode) {
     }
 }
 
-std::string TranslateQualType(const QualType qt, TypeMode mode) {
-    const Type *ty = qt.getTypePtrOrNull();
+string TranslateQualType(const QualType qt, TypeMode mode) {
+    QualType cqt = qt.getCanonicalType();
+    const Type *ty = cqt.getTypePtrOrNull();
     if (ty != NULL) {
         return TranslateType(ty, mode);
     } else {
@@ -317,6 +318,11 @@ void Translate::TranslateDecl(const Decl *d) {
             outs() << "TranslateDecl::TemplateDecl::else\n";
         }
     } else if (TypeDecl::classof(d)) {
+
+        // const TypeDecl *tdecl = (const TypeDecl *) d;
+        // SourceLocation loc = tdecl->getLocStart();
+        // if (_cxt.getSourceManager().getMainFileID() != _cxt.getSourceManager().getFileID(loc)) return;
+
         if (TagDecl::classof(d)) {
             if (RecordDecl::classof(d)) {
                 TranslateRecordDecl((RecordDecl *) d);
@@ -327,8 +333,16 @@ void Translate::TranslateDecl(const Decl *d) {
             outs() << "TranslateDecl::TypeDecl::else\n";
         }
     } else if (NamedDecl::classof(d)) {
-        if (ValueDecl::classof(d)) {
+        if (NamespaceDecl::classof(d)) {
+            const NamespaceDecl *nsdecl = (const NamespaceDecl *) d;
+        } else if (UsingDecl::classof(d)) {
+            return;
+        } else if (ValueDecl::classof(d)) {
             if (DeclaratorDecl::classof(d)) {
+                // const DeclaratorDecl *ddecl = (const DeclaratorDecl *) d;
+                // SourceLocation loc = ddecl->getOuterLocStart();
+                // if (_cxt.getSourceManager().getMainFileID() != _cxt.getSourceManager().getFileID(loc)) return;
+
                 if (FieldDecl::classof(d)) {
                     TranslateFieldDecl((const FieldDecl *) d);
                 } else if (FunctionDecl::classof(d)) {
@@ -356,7 +370,7 @@ void Translate::TranslateFunctionDecl(const FunctionDecl *d) {}
 
 void Translate::TranslateVarDecl(const VarDecl *d) {}
 
-void Translate::TranslateDeclContext(const DeclContext *dc) {
+void Translate::TranslateTranslationUnitDecl(const TranslationUnitDecl *dc) {
     for (auto decl : dc->decls()) {
         TranslateDecl(decl);
     }

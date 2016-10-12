@@ -49,7 +49,7 @@ protected:
     void TranslateDecl(const Decl *d);
 
 public:
-    void TranslateDeclContext(const DeclContext *dc);
+    void TranslateTranslationUnitDecl(const TranslationUnitDecl *dc);
     Translate(ASTContext &cxt);
 
 };

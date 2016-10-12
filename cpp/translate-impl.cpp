@@ -98,7 +98,39 @@ std::string AccessPathOfValueDecl(ValueDecl *vdecl, const SourceManager &sm) {
 
 std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
     QualType qt = e->getType();
-    if (BinaryOperator::classof(e)) {
+    if (AbstractConditionalOperator::classof(e)) {
+        if (ConditionalOperator::classof(e)) {
+            ConditionalOperator *cexpr = (ConditionalOperator *) e;
+
+            std::string name_ret = GenName(qt, name);
+            outs() << name_ret << " <- ife _ _\n";
+
+            outs() << "(";
+            std::string cname = TranslateExpr(cexpr->getCond());
+            outs() << "step _ "<< cname << ")\n";
+
+            outs() << "(";
+            std::string tname = TranslateExpr(cexpr->getTrueExpr());
+            outs() << "step _ " << tname << ")\n";
+
+            outs() << "(";
+            std::string fname = TranslateExpr(cexpr->getFalseExpr());
+            outs() << "step _ " << fname << ")\n";
+
+            return name_ret;
+        } else {
+            e->dump();
+            outs() << "TranslateExpr::AbstractConditionalOperator\n";
+        }
+    } else if (ArraySubscriptExpr::classof(e)) {
+        ArraySubscriptExpr * aexpr = (ArraySubscriptExpr *) e;
+        std::string name_base = TranslateExpr(aexpr->getBase());
+        std::string name_idx = TranslateExpr(aexpr->getIdx());
+
+        std::string name_ret = GenName(qt, name);
+        outs() << name_ret << " <- array_subscript _ _ " << name_base << " " << name_idx << ";\n";
+        return name_ret;
+    } else if (BinaryOperator::classof(e)) {
         BinaryOperator *bexpr = (BinaryOperator *) e;
         Expr *lexpr = bexpr->getLHS();
         Expr *rexpr = bexpr->getRHS();
@@ -154,7 +186,20 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
                     outs() << name_new << " <- get _ _ " << name_sub << ";\n";
                     return name_new;
                 }
+            case CK_IntegralCast:
+                {
+                    std::string name_new = GenName(qt, name);
+                    outs() << name_new << " <- integral_cast _ " << TranslateQualType(qt, TypeMode::var) << " " << name_sub << ";\n";
+                    return name_new;
+                }
+            case CK_PointerToBoolean:
+                {
+                    std::string name_new
+                    { "(pointer_to_boolean _ " + name_sub + ")" };
+                    return BindOrReturn(name_new, name);
+                }
             default:
+                e->dump();
                 return std::string { "ImplicitCastExpr::else" };
             }
         } else {
@@ -323,6 +368,7 @@ void translateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
+    if (d->getNameAsString() != "_child_depth") return;
 
     if (!d->hasBody()) {
         outs() << "(* " << fname << " has no body. *)\n";
@@ -375,7 +421,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateImpl(context).TranslateDeclContext(context.getTranslationUnitDecl());
+        translateImpl(context).TranslateTranslationUnitDecl(context.getTranslationUnitDecl());
     }
 
 private:

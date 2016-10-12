@@ -145,7 +145,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateDecl(context).TranslateDeclContext(context.getTranslationUnitDecl());
+        translateDecl(context).TranslateTranslationUnitDecl(context.getTranslationUnitDecl());
     }
 
 private:

@@ -66,7 +66,7 @@ public:
     }
 
     virtual void HandleTranslationUnit(ASTContext &context) {
-        translateStub(context).TranslateDeclContext(context.getTranslationUnitDecl());
+        translateStub(context).TranslateTranslationUnitDecl(context.getTranslationUnitDecl());
     }
 
 private:
