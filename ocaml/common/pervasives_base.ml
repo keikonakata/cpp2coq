@@ -1,4 +1,5 @@
 type coq_int = int option
+type coq_bool = bool option
 type loc = int option
 type uchar = int option
 type ulong = int option
@@ -10,7 +11,7 @@ type longlong = int option
 type value =
 | V_Void
 | V_Loc of loc
-| V_Bool of bool
+| V_Bool of coq_bool
 | V_Uchar of uchar
 | V_Ulong of ulong
 | V_Ulonglong of ulonglong

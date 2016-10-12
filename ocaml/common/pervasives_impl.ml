@@ -3,8 +3,8 @@ open Compt
 open Pervasives_base
 
 let ttt = V_Void
-let tt = V_Bool true
-let ff = V_Bool false
+let tt = V_Bool (Some true)
+let ff = V_Bool (Some false)
 
 let init sty =
   match sty with
@@ -88,6 +88,18 @@ let call sty_l sty_t f st =
   | _ -> assert false
 
 let call_ f st = call Void Void f st
+
+let ife sty_l sty_t c t f st =
+  match c st with
+  | Coq_ret _ as r -> r
+  | Coq_step(v, st') ->
+     begin
+       match v with
+       | V_Bool(Some b) ->
+          if b then t st else f st
+       | _ -> assert false
+     end
+  | _ -> assert false
 
 let add_Int_Int sty l r st =
   match l with

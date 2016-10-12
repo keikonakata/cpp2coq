@@ -26,6 +26,9 @@ Extract Constant salloc_with_init => "Pervasives_impl.salloc_with_init".
 Parameter call : forall L T, fanswer L -> m L T.
 Extract Constant call => "Pervasives_impl.call".
 
+Parameter ife : forall L T, m Bool T -> m L T -> m L T -> m L T.
+Extract Constant ife => "Pervasives_impl.ife".
+
 Parameter add_Int_Int : forall T, value Int -> value Int -> m Int T.
 Extract Constant add_Int_Int => "Pervasives_impl.add_Int_Int".
 
