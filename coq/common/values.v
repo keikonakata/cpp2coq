@@ -1,7 +1,9 @@
 Inductive stype : Set :=
 | A : stype
+| Avl_node_base : stype
 | Void : stype
 | Loc : stype -> stype
+| Array : stype -> stype
 (* builtin types *)
 | Bool
 | Uchar
