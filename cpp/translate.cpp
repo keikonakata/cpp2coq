@@ -159,24 +159,29 @@ std::string TranslateBuiltinType(const BuiltinType *ty) {
     }
 }
 
-std::string TranslateRecordType(const RecordType *ty, TypeMode mode) {
-    RecordDecl *rdecl = ty->getDecl();
-    const DeclContext *cxt = rdecl->getParent();
-    if (rdecl) {
-        switch (mode) {
-        case TypeMode::param:
-            return std::string { "(Loc " + PathOfDeclContext(cxt, "") + NameOfRecordDecl(rdecl) + ")" };
-        case TypeMode::var:
-        case TypeMode::str:
-            return std::string { PathOfDeclContext(cxt, "") + NameOfRecordDecl(rdecl) };
-        }
-    }
 
-    return std::string { "TranslateRecordType:null" };
+string TypeOfRecordDecl(const RecordDecl *rdecl) {
+    const DeclContext *cxt = rdecl->getParent();
+    return std::string
+        { PathOfDeclContext(cxt, "") + NameOfRecordDecl(rdecl) };
 }
 
 std::string TranslateType(const Type *ty, TypeMode mode) {
-    if (BuiltinType::classof(ty)) {
+    if (ArrayType::classof(ty)) {
+        const ArrayType *aty = (const ArrayType *) ty;
+        QualType eqt = aty->getElementType();
+        switch (mode) {
+        case TypeMode::param:
+            return std::string
+                { "(Loc (Array " + TranslateQualType(eqt, TypeMode::var) + "))" };
+        case TypeMode::var:
+            return std::string
+                { "(Array " + TranslateQualType(eqt, TypeMode::var) + ")" };
+        case TypeMode::str:
+            return std::string
+                { "Array" + TranslateQualType(eqt, TypeMode::str) };
+        }
+    } else if (BuiltinType::classof(ty)) {
         switch (mode) {
         case TypeMode::param:
             {
@@ -233,7 +238,20 @@ std::string TranslateType(const Type *ty, TypeMode mode) {
         return TranslateQualType(pty->getReplacementType(), mode);
     } else if (TagType::classof(ty)) {
             if (RecordType::classof(ty)) {
-                return TranslateRecordType((const RecordType *) ty, mode);
+                RecordDecl *rdecl = ((const RecordType *) ty)->getDecl();
+                if (rdecl) {
+                    string rname = TypeOfRecordDecl(rdecl);
+                    switch (mode) {
+                    case TypeMode::var:
+                        return rname;
+                    case TypeMode::param:
+                        return string { "(Loc " + rname + ")" };
+                    case TypeMode::str:
+                        return rname;
+                    }
+                }
+
+                return std::string { "TranslateType::RecordType::null " };
             } else if (EnumType::classof(ty)) {
                 return std::string { "TranslateType::EnumType" };
             } else {
@@ -278,6 +296,9 @@ std::string NameOfFunctionDecl(const FunctionDecl *d) {
 }
 
 std::string NameOfRecordDecl(const RecordDecl *d) {
+    if (ClassTemplateSpecializationDecl::classof(d)) {
+        return std::string { "NameOfRecordDecl::else" };
+    }
     return d->getNameAsString();
 }
 

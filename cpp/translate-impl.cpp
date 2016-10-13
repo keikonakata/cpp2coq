@@ -67,6 +67,9 @@ std::string StringOfValueDecl(ValueDecl *vdecl) {
             vdecl->dump();
             return std::string { "StringOfValueDecl::DeclaratorDecl::else" };
         }
+    } else if (EnumConstantDecl::classof(vdecl)) {
+        EnumConstantDecl *edecl = (EnumConstantDecl *) vdecl;
+        return (edecl->getInitVal()).toString(10);
     } else {
         vdecl->dump();
         return std::string { "StringOfValueDecl::else" };
@@ -96,6 +99,39 @@ std::string AccessPathOfValueDecl(ValueDecl *vdecl, const SourceManager &sm) {
     }
 }
 
+std::string NameOfBinaryOperator(BinaryOperator::Opcode op) {
+    switch (op) {
+        case BO_Mul:
+            return std::string { "mul" };
+        case BO_Div:
+            return std::string { "div" };
+        case BO_Rem:
+            return std::string { "rem" };
+        case BO_Add:
+            return std::string { "add" };
+        case BO_Sub:
+            return std::string { "sub" };
+        case BO_Shl:
+            return std::string { "shl" };
+        case BO_Shr:
+            return std::string { "shr" };
+        case BO_LT:
+            return std::string { "lt" };
+        case BO_GT:
+            return std::string { "gt" };
+        case BO_LE:
+            return std::string { "le" };
+        case BO_GE:
+            return std::string { "ge" };
+        case BO_EQ:
+            return std::string { "eq" };
+        case BO_NE:
+            return std::string { "ne" };
+    }
+
+    return std::string { "NameOfBinaryOperator::else" };
+}
+
 std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
     QualType qt = e->getType();
     if (AbstractConditionalOperator::classof(e)) {
@@ -115,7 +151,7 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
 
             outs() << "(";
             std::string fname = TranslateExpr(cexpr->getFalseExpr());
-            outs() << "step _ " << fname << ")\n";
+            outs() << "step _ " << fname << ");\n";
 
             return name_ret;
         } else {
@@ -128,7 +164,7 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         std::string name_idx = TranslateExpr(aexpr->getIdx());
 
         std::string name_ret = GenName(qt, name);
-        outs() << name_ret << " <- array_subscript _ _ " << name_base << " " << name_idx << ";\n";
+        outs() << name_ret << " <- array_subscript _ _ _ " << name_base << " " << name_idx << ";\n";
         return name_ret;
     } else if (BinaryOperator::classof(e)) {
         BinaryOperator *bexpr = (BinaryOperator *) e;
@@ -141,17 +177,12 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         std::string rname = TranslateExpr(rexpr);
         std::string rname_qt = TranslateQualType(rexpr->getType(), TypeMode::str);
 
-        BinaryOperator::Opcode kind = bexpr->getOpcode();
-        switch (kind) {
-        case BO_Add:
-            {
-                std::string name_ret = GenName(qt, name);
-                outs() << name_ret << " <- add_" << lname_qt << "_" << rname_qt << " _ " << lname << " " << rname << ";\n";
-                return name_ret;
-            }
-        default:
-            return std::string { "TranslateExpr::BinaryOperator::default" };
-        }
+        BinaryOperator::Opcode op = bexpr->getOpcode();
+        std::string oname = NameOfBinaryOperator(op);
+
+        std::string name_ret = GenName(qt, name);
+        outs() << name_ret << " <- " << oname << "_" << lname_qt << "_" << rname_qt << " _ " << lname << " " << rname << ";\n";
+        return name_ret;
     } else if (CallExpr::classof(e)) {
         CallExpr *cexpr = (CallExpr *) e;
         std::string name_ret = GenName(qt, name);
@@ -195,8 +226,14 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
             case CK_IntegralCast:
                 {
                     std::string name_new = GenName(qt, name);
-                    outs() << name_new << " <- integral_cast _ " << TranslateQualType(qt, TypeMode::var) << " " << name_sub << ";\n";
+                    outs() << name_new << " <- integral_cast _ " << TranslateQualType(qt, TypeMode::var) << " _ " << name_sub << ";\n";
                     return name_new;
+                }
+            case CK_IntegralToBoolean:
+                {
+                    std::string name_new
+                    { "(integral_to_boolean _ " + name_sub + ")" };
+                    return BindOrReturn(name_new, name);
                 }
             case CK_PointerToBoolean:
                 {
@@ -375,10 +412,11 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
 }
 
 void translateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
+    if (d->getNameAsString() != "_child_depth" && d->getNameAsString() != "_bias") return;
+
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
-    if (d->getNameAsString() != "_child_depth" && d->getNameAsString() != "_bias") return;
 
     if (!d->hasBody()) {
         outs() << "(* " << fname << " has no body. *)\n";

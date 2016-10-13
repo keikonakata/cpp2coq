@@ -26,6 +26,8 @@ std::string TranslateQualType(const QualType qt, TypeMode mode);
 
 std::string TranslateType(const Type *ty, TypeMode mode);
 
+std::string TypeOfRecordDecl(const RecordDecl *rdecl);
+
 std::string TranslateBuiltinType(const BuiltinType *ty);
 
 std::string NameOfFunctionDecl(const FunctionDecl *d);

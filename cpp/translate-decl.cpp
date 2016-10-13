@@ -52,9 +52,9 @@ void translateDecl::TranslateFieldDecl(const FieldDecl *d) {
 
     outs() << "\n";
 
-    outs() << "Parameter " << fname << " : value (Loc " << ") ->";
+    outs() << "Parameter " << fname << " : value (Loc " << TypeOfRecordDecl(rdecl) << ") ->";
 
-    outs() << " value (Loc " << TranslateQualType(qt, TypeMode::var) << ").\n";
+    outs() << " value " << TranslateQualType(qt, TypeMode::param) << ".\n";
     outs() << "Extract Constant " << fname << " => \"fun (this : value) ->\".\n";
 }
 
