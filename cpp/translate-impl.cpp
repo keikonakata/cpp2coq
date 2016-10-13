@@ -180,6 +180,12 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
 
             CastKind kind = expr_cast->getCastKind();
             switch (kind) {
+            case CK_ArrayToPointerDecay:
+                {
+                    std::string name_new
+                    { "(array_to_pointer_decay _ " + name_sub + ")" };
+                    return BindOrReturn(name_new, name);
+                }
             case CK_LValueToRValue:
                 {
                     std::string name_new = GenName(qt, name);
@@ -271,6 +277,10 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         std::string bname = TranslateExpr(mexpr->getBase());
         ValueDecl *vdecl = mexpr->getMemberDecl();
         return std::string { "(" + AccessPathOfValueDecl(vdecl, _cxt.getSourceManager()) + " " + bname + ")" };
+    } else if (ParenExpr::classof(e)) {
+        ParenExpr *pexpr = (ParenExpr *) e;
+        Expr* sexpr = pexpr->getSubExpr();
+        return TranslateExpr(sexpr);
     }
 
     e->dump();
@@ -368,7 +378,7 @@ void translateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
-    if (d->getNameAsString() != "_child_depth") return;
+    if (d->getNameAsString() != "_child_depth" && d->getNameAsString() != "_bias") return;
 
     if (!d->hasBody()) {
         outs() << "(* " << fname << " has no body. *)\n";
