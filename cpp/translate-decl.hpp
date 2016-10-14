@@ -6,6 +6,8 @@
 
 #include "translate.hpp"
 
+bool IsCallByLocation(QualType qt);
+
 class translateDecl : public Translate
 {
     void TranslateFunctionDecl(const FunctionDecl *d) override;

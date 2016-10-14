@@ -44,6 +44,8 @@ class Translate {
 
     void virtual TranslateRecordDecl(RecordDecl *d);
 
+    void virtual TranslateEnumDecl(EnumDecl *d);
+
     void TranslateFunctionTemplateDecl(FunctionTemplateDecl *d);
 
 protected:

@@ -29,6 +29,10 @@ std::string Punct(StmtMode mode) {
 
 int count = 0;
 
+void ResetName() {
+    count = 0;
+}
+
 std::string GenName(const Type *ty) {
     return std::string { "tmp_" + std::to_string(count++) };
 }
@@ -127,6 +131,18 @@ std::string NameOfBinaryOperator(BinaryOperator::Opcode op) {
             return std::string { "eq" };
         case BO_NE:
             return std::string { "ne" };
+        case BO_And:
+            return std::string { "and" };
+        case BO_Xor:
+            return std::string { "xor" };
+        case BO_Or:
+            return std::string { "or" };
+        case BO_LAnd:
+            return std::string { "land" };
+        case BO_LOr:
+            return std::string { "lor" };
+        case BO_Assign:
+            return std::string { "assign" };
     }
 
     return std::string { "NameOfBinaryOperator::else" };
@@ -222,6 +238,12 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
                     std::string name_new = GenName(qt, name);
                     outs() << name_new << " <- get _ _ " << name_sub << ";\n";
                     return name_new;
+                }
+            case CK_NullToPointer:
+                {
+                    std::string name_new
+                    { "(null_to_pointer _ _ " + name_sub + ")" };
+                    return BindOrReturn(name_new, name);
                 }
             case CK_IntegralCast:
                 {
@@ -412,7 +434,8 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
 }
 
 void translateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
-    if (d->getNameAsString() != "_child_depth" && d->getNameAsString() != "_bias") return;
+    ResetName();
+    // if (d->getNameAsString() != "_child_depth" && d->getNameAsString() != "_bias") return;
 
     outs() << "\n";
 
@@ -446,6 +469,20 @@ void translateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
     QualType qt_ret = d->getReturnType();
     std::string str_ret = TranslateQualType(qt_ret, TypeMode::var);
     outs() << " : result " << str_ret << " :=\n";
+
+    if (CXXConstructorDecl::classof(d)) {
+        CXXConstructorDecl *cxxcdecl = (CXXConstructorDecl *) d;
+        for (auto init : cxxcdecl->inits()) {
+            if (init->isMemberInitializer()) {
+                FieldDecl *fdecl = init->getMember();
+                Expr *iexpr = init->getInit();
+                std::string iname = TranslateExpr(iexpr);
+                outs() << "_ <- put _ _ (" + AccessPathOfValueDecl(fdecl, _cxt.getSourceManager()) + " this) " <<iname << ";\n";
+            } else {
+            outs() << "TranslateFunctionDecl::CXXConstructorDecl\n";
+            }
+        }
+    }
 
     Stmt* body = d->getBody();
     TranslateStmt(body, StmtMode::period);

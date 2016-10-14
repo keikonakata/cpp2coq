@@ -22,7 +22,11 @@ bool IsCallByLocation(const Type *ty) {
             outs() << "IsCallByLocation::TagType::else\n";
             return false;
         }
+    } else if (TypedefType::classof(ty)) {
+        const TypedefType *tdty = (const TypedefType *) ty;
+        return IsCallByLocation(tdty->desugar());
     } else {
+        ty->dump();
         outs() << "IsCallByLocation::else\n";
         return false;
     }

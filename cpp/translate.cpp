@@ -308,6 +308,8 @@ void Translate::TranslateFunctionTemplateDecl(FunctionTemplateDecl *d) {
         }
     }
 
+void Translate::TranslateEnumDecl(EnumDecl *d) {}
+
 void Translate::TranslateRecordDecl(RecordDecl *d) {
     if (d->isInjectedClassName()) {
         return;
@@ -328,35 +330,45 @@ void Translate::TranslateRecordDecl(RecordDecl *d) {
 
 
 void Translate::TranslateDecl(const Decl *d) {
-    if (TemplateDecl::classof(d)) {
-        if (RedeclarableTemplateDecl::classof(d)) {
-            if (FunctionTemplateDecl::classof(d)) {
-                TranslateFunctionTemplateDecl((FunctionTemplateDecl *) d);
-            } else {
-                outs() << "TranslateDecl::RedecralableTemplateDecl::else\n";
-            }
-        } else {
-            outs() << "TranslateDecl::TemplateDecl::else\n";
-        }
-    } else if (TypeDecl::classof(d)) {
-
-        // const TypeDecl *tdecl = (const TypeDecl *) d;
-        // SourceLocation loc = tdecl->getLocStart();
-        // if (_cxt.getSourceManager().getMainFileID() != _cxt.getSourceManager().getFileID(loc)) return;
-
-        if (TagDecl::classof(d)) {
-            if (RecordDecl::classof(d)) {
-                TranslateRecordDecl((RecordDecl *) d);
-            } else {
-                outs() << "TranslateDecl::TagDecl::else\n";
-            }
-        } else {
-            outs() << "TranslateDecl::TypeDecl::else\n";
-        }
+    if (AccessSpecDecl::classof(d)) {
+        return;
     } else if (NamedDecl::classof(d)) {
         if (NamespaceDecl::classof(d)) {
             const NamespaceDecl *nsdecl = (const NamespaceDecl *) d;
+        } else if (TemplateDecl::classof(d)) {
+            if (RedeclarableTemplateDecl::classof(d)) {
+                if (FunctionTemplateDecl::classof(d)) {
+                    TranslateFunctionTemplateDecl((FunctionTemplateDecl *) d);
+                } else {
+                    outs() << "TranslateDecl::RedecralableTemplateDecl::else\n";
+                }
+            } else {
+                outs() << "TranslateDecl::TemplateDecl::else\n";
+            }
+        } else if (TypeDecl::classof(d)) {
+
+            // const TypeDecl *tdecl = (const TypeDecl *) d;
+            // SourceLocation loc = tdecl->getLocStart();
+            // if (_cxt.getSourceManager().getMainFileID() != _cxt.getSourceManager().getFileID(loc)) return;
+
+            if (TagDecl::classof(d)) {
+                if (RecordDecl::classof(d)) {
+                    TranslateRecordDecl((RecordDecl *) d);
+                } else if (EnumDecl::classof(d)) {
+                    TranslateEnumDecl((EnumDecl *) d);
+                } else {
+                    d->dump();
+                    outs() << "TranslateDecl::TagDecl::else\n";
+                }
+            } else {
+                d->dump();
+                outs() << "TranslateDecl::TypeDecl::else\n";
+            }
         } else if (UsingDecl::classof(d)) {
+            return;
+        } else if (UsingDirectiveDecl::classof(d)) {
+            return;
+        } else if (UsingShadowDecl::classof(d)) {
             return;
         } else if (ValueDecl::classof(d)) {
             if (DeclaratorDecl::classof(d)) {
@@ -378,9 +390,11 @@ void Translate::TranslateDecl(const Decl *d) {
                 outs() << "TranslateDecl::ValueDecl::else\n";
             }
         } else {
+            d->dump();
             outs() << "TranslateDecl::NamedDecl::else\n";
         }
     } else {
+        d->dump();
         outs() << "TranslateDecl::else\n";
     }
 }
