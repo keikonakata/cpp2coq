@@ -120,7 +120,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
         }
 
     }
-    outs() << "Pervasives_impl.call_ (!" << name_impl;
+    outs() << "!" << name_impl;
 
     if (CXXMethodDecl::classof(d)) {
         CXXMethodDecl *cxxmdecl = (CXXMethodDecl *) d;
@@ -133,7 +133,7 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
     for (auto param : d-> parameters()) {
         outs() << " " << param->getNameAsString();
     }
-    outs() << ") st\".\n";
+    outs() << " st\".\n";
 
 }
 
