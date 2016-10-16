@@ -73,7 +73,8 @@ std::string StringOfValueDecl(ValueDecl *vdecl) {
         }
     } else if (EnumConstantDecl::classof(vdecl)) {
         EnumConstantDecl *edecl = (EnumConstantDecl *) vdecl;
-        return (edecl->getInitVal()).toString(10);
+        return std::string
+            { "int_" + (edecl->getInitVal()).toString(10) };
     } else {
         vdecl->dump();
         return std::string { "StringOfValueDecl::else" };
