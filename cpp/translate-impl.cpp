@@ -63,24 +63,24 @@ std::string BindOrReturn(std::string name, std::string bname) {
     }
 }
 
-std::string StringOfValueDecl(ValueDecl *vdecl) {
-    if (DeclaratorDecl::classof(vdecl)) {
-        if (VarDecl::classof(vdecl)) {
-            return vdecl->getNameAsString();
-        } else {
-            vdecl->dump();
-            return std::string { "StringOfValueDecl::DeclaratorDecl::else" };
-        }
-    } else if (EnumConstantDecl::classof(vdecl)) {
-        EnumConstantDecl *edecl = (EnumConstantDecl *) vdecl;
-        return std::string
-            { "int_" + (edecl->getInitVal()).toString(10) };
-    } else {
-        vdecl->dump();
-        return std::string { "StringOfValueDecl::else" };
-    }
+// std::string StringOfValueDecl(ValueDecl *vdecl) {
+//     if (DeclaratorDecl::classof(vdecl)) {
+//         if (VarDecl::classof(vdecl)) {
+//             return vdecl->getNameAsString();
+//         } else {
+//             vdecl->dump();
+//             return std::string { "StringOfValueDecl::DeclaratorDecl::else" };
+//         }
+//     } else if (EnumConstantDecl::classof(vdecl)) {
+//         EnumConstantDecl *edecl = (EnumConstantDecl *) vdecl;
+//         return std::string
+//             { "int_" + (edecl->getInitVal()).toString(10) };
+//     } else {
+//         vdecl->dump();
+//         return std::string { "StringOfValueDecl::else" };
+//     }
 
-}
+// }
 
 std::string NameOfFieldDecl(FieldDecl *fdecl) {
     return fdecl->getNameAsString();
@@ -91,16 +91,28 @@ std::string PathOfFieldDecl(FieldDecl *fdecl) {
 }
 
 std::string AccessPathOfValueDecl(ValueDecl *vdecl, const SourceManager &sm) {
-    if (FieldDecl::classof(vdecl)) {
-        FieldDecl *fdecl = (FieldDecl *) vdecl;
+    if (DeclaratorDecl::classof(vdecl)) {
+        if (FieldDecl::classof(vdecl)) {
+            FieldDecl *fdecl = (FieldDecl *) vdecl;
+            return std::string
+                { DeclFile(FileOfDecl(fdecl, sm)) + "." + PathOfFieldDecl(fdecl) };
+        } else if (FunctionDecl::classof(vdecl)) {
+            FunctionDecl *fdecl = (FunctionDecl *) vdecl;
+            return std::string
+                { DeclFile(FileOfDecl(fdecl, sm)) + "." + PathOfFunctionDecl(fdecl) };
+        } else if (VarDecl::classof(vdecl)) {
+            return vdecl->getNameAsString();
+        }
+
+        vdecl->dump();
+        return std::string { "AccessPathOfValueDecl::DeclaratorDecl::else" };
+    } else if (EnumConstantDecl::classof(vdecl)) {
+        EnumConstantDecl *edecl = (EnumConstantDecl *) vdecl;
         return std::string
-            { DeclFile(FileOfDecl(fdecl, sm)) + "." + PathOfFieldDecl(fdecl) };
-    } else if (CXXMethodDecl::classof(vdecl)) {
-        FunctionDecl *fdecl = (FunctionDecl *) vdecl;
-        return std::string
-            { DeclFile(FileOfDecl(fdecl, sm)) + "." + PathOfFunctionDecl(fdecl) };
+            { "int_" + (edecl->getInitVal()).toString(10) };
     } else {
-        return std::string { "PathOfMemberDecl::else" };
+        vdecl->dump();
+        return std::string { "AccessPathOfValueDecl::else" };
     }
 }
 
@@ -234,16 +246,10 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
                     { "(array_to_pointer_decay _ " + name_sub + ")" };
                     return BindOrReturn(name_new, name);
                 }
-            case CK_LValueToRValue:
-                {
-                    std::string name_new = GenName(qt, name);
-                    outs() << name_new << " <- get _ _ " << name_sub << ";\n";
-                    return name_new;
-                }
-            case CK_NullToPointer:
+            case CK_FunctionToPointerDecay:
                 {
                     std::string name_new
-                    { "(null_to_pointer _ _ " + name_sub + ")" };
+                    { "(function_to_pointer_decay _ " + name_sub + ")" };
                     return BindOrReturn(name_new, name);
                 }
             case CK_IntegralCast:
@@ -256,6 +262,18 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
                 {
                     std::string name_new
                     { "(integral_to_boolean _ " + name_sub + ")" };
+                    return BindOrReturn(name_new, name);
+                }
+            case CK_LValueToRValue:
+                {
+                    std::string name_new = GenName(qt, name);
+                    outs() << name_new << " <- get _ _ " << name_sub << ";\n";
+                    return name_new;
+                }
+            case CK_NullToPointer:
+                {
+                    std::string name_new
+                    { "(null_to_pointer _ _ " + name_sub + ")" };
                     return BindOrReturn(name_new, name);
                 }
             case CK_PointerToBoolean:
@@ -324,7 +342,7 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         DeclRefExpr *dexpr = (DeclRefExpr *) e;
         ValueDecl *vdecl = dexpr->getDecl();
         if (vdecl) {
-            return StringOfValueDecl(vdecl);
+            return AccessPathOfValueDecl(vdecl, _cxt.getSourceManager());
         } else {
             return std::string { "TranslateExpr::DeclRefExpr::null" };
         }
@@ -417,6 +435,80 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
     } else if (Expr::classof(s)) {
         std::string name = TranslateExpr((Expr *) s);
         outs() << Prompt(mode) << "step _ ttt" << Punct(mode);
+    } else if (ForStmt::classof(s)) {
+        ForStmt *s_for = (ForStmt *) s;
+        Stmt *s_init = s_for->getInit();
+        Expr *e_cond = s_for->getCond();
+        Stmt *s_inc = s_for->getInc();
+        Stmt *s_body = s_for->getBody();
+
+        if (s_init) {
+            TranslateStmt(s_init, StmtMode::semicolon);
+        }
+
+        outs() << Prompt(mode) << "do_for\n";
+
+        outs() << "(";
+        if (e_cond) {
+            std::string name = TranslateExpr(e_cond);
+            outs() << "step _ " << name;
+        } else {
+            outs() << "step _ tt";
+        }
+        outs() << ")\n";
+
+        outs() << "(";
+        if (s_inc) {
+            TranslateStmt(s_inc, StmtMode::none);
+        } else {
+            outs() << "step _ ttt";
+        }
+        outs() << ")\n";
+
+        outs() << "(";
+        if (s_body) {
+            TranslateStmt(s_body, StmtMode::none);
+        } else {
+            outs() << "step _ ttt";
+        }
+        outs() << Punct(mode);
+    } else if (IfStmt::classof(s)) {
+        IfStmt *s_if = (IfStmt *) s;
+        Stmt *s_init = s_if->getInit();
+        Expr *e_cond = s_if->getCond();
+        Stmt *s_then = s_if->getThen();
+        Stmt *s_else = s_if->getElse();
+
+        if (s_init) {
+            TranslateStmt(s_init, StmtMode::semicolon);
+        }
+
+        outs() << Prompt(mode) << "do_if\n";
+
+        outs() << "(";
+        if (e_cond) {
+            std::string name = TranslateExpr(e_cond);
+            outs() << "Step _ " << name;
+        } else {
+        }
+        outs() << ")\n";
+
+        outs() << "(";
+        if (s_then) {
+            TranslateStmt(s_then, StmtMode::none);
+        } else {
+            outs() << "Step _ ttt";
+        }
+        outs() << ")\n";
+
+        outs() << "(";
+        if (s_else) {
+            TranslateStmt(s_else, StmtMode::none);
+        } else  {
+            outs() << "Step _ ttt";
+        }
+        outs() << ")" << Punct(mode);
+
     } else if (ReturnStmt::classof(s)) {
         ReturnStmt *rstmt = (ReturnStmt *) s;
 
@@ -427,7 +519,29 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
         } else {
             outs() << Prompt(mode) << "ret _ ttt" << Punct(mode);
         }
+    } else if (WhileStmt::classof(s)) {
+        WhileStmt *s_while = (WhileStmt *) s;
+        Expr *e_cond = s_while->getCond();
+        Stmt *s_body = s_while->getBody();
 
+        outs() << Prompt(mode) << "while\n";
+
+        outs() << "(";
+        if (e_cond) {
+            std::string name = TranslateExpr(e_cond);
+            outs() << "step _ " << name;
+        } else {
+            outs() << "step _ ttt";
+        }
+        outs() << ")\n";
+
+        outs() << "(";
+        if (s_body) {
+            TranslateStmt(s_body, StmtMode::none);
+        } else {
+            outs() << "step _ ttt";
+        }
+        outs() << ")" << Punct(mode);
     } else {
         outs() << "TranslateStmt::else\n";
         s->dump();

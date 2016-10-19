@@ -105,7 +105,9 @@ std::string FileOfDecl(const FunctionDecl *d, const SourceManager &sm) {
 
     FunctionTemplateDecl *ftdecl = d->getPrimaryTemplate();
     if (ftdecl) {
-        return std::string { "FileOfDecl::ftdecl is not null" };
+        SourceLocation sloc = (ftdecl->getSourceRange()).getBegin();
+        string name = sm.getFilename(sloc);
+        return basename(notdir(name));
     }
 
     SourceLocation sloc = d->getOuterLocStart();
@@ -288,6 +290,30 @@ std::string NameOfFunctionDecl(const FunctionDecl *d) {
     }
 
     std::vector<std::string> anames;
+
+    FunctionTemplateDecl *ftdecl = d->getPrimaryTemplate();
+    if (ftdecl) {
+        const TemplateArgumentList *targs = d->getTemplateSpecializationArgs();
+        if (targs) {
+            unsigned size = targs->size();
+            for (auto i = 0; i < size; i++) {
+                TemplateArgument::ArgKind kind = targs->get(i).getKind();
+                switch (kind) {
+                case TemplateArgument::Type:
+                    {
+                        QualType qt = targs->get(i).getAsType();
+                        anames.emplace_back(TranslateQualType(qt, TypeMode::str));
+                        break;
+                    }
+                default:
+                    anames.emplace_back("NameOfFunctionDecl::NOT_A_TYPE");
+                }
+            }
+        } else {
+            outs() << "NameOfFunctionDecl::TemplateArgumentList is NULL.\n";
+        }
+    }
+
     for (auto param : d->parameters()) {
         anames.emplace_back(TranslateQualType(param->getType(), TypeMode::str));
     }
