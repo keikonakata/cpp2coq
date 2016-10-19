@@ -63,25 +63,6 @@ std::string BindOrReturn(std::string name, std::string bname) {
     }
 }
 
-// std::string StringOfValueDecl(ValueDecl *vdecl) {
-//     if (DeclaratorDecl::classof(vdecl)) {
-//         if (VarDecl::classof(vdecl)) {
-//             return vdecl->getNameAsString();
-//         } else {
-//             vdecl->dump();
-//             return std::string { "StringOfValueDecl::DeclaratorDecl::else" };
-//         }
-//     } else if (EnumConstantDecl::classof(vdecl)) {
-//         EnumConstantDecl *edecl = (EnumConstantDecl *) vdecl;
-//         return std::string
-//             { "int_" + (edecl->getInitVal()).toString(10) };
-//     } else {
-//         vdecl->dump();
-//         return std::string { "StringOfValueDecl::else" };
-//     }
-
-// }
-
 std::string NameOfFieldDecl(FieldDecl *fdecl) {
     return fdecl->getNameAsString();
 }
