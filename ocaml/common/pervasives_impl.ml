@@ -12,7 +12,8 @@ let init sty =
      V_Avl_node_base
        { _child = V_Array (Array.make 2 (init_V_Loc ()));
        _parent = init_V_Loc ();
-       _depth = init_V_Uchar () }
+       _depth = init_V_Uchar ();
+       _value = init_V_Uint () }
   | Loc _ -> init_V_Loc ()
   | Int -> init_V_Int ()
   | Bool -> init_V_Bool ()
@@ -21,7 +22,7 @@ let init sty =
 let size_of_stype sty =
   match sty with
   | A
-  | Avl_node_base -> 25
+  | Avl_node_base -> 40
   | Void -> assert false
   | Loc _ -> 8
   | Bool -> 1
@@ -370,7 +371,7 @@ let integral_to_boolean sty v =
 (* div *)
 (* rem *)
 
-(* add *)
+(* Add *)
 let add_Int_Int sty l r st =
   match l with
   | V_Int(Some i) ->
@@ -381,17 +382,17 @@ let add_Int_Int sty l r st =
      end
   | _ -> assert false
 
-(* sub *)
+(* Sub *)
 let sub_Int_Int sty_t l r st =
   match l, r with
   | V_Int(Some _l), V_Int(Some _r) ->
      Coq_step(mk_V_Int (_l - _r), st)
   | _ -> assert false
 
-(* shl *)
-(* shr *)
+(* Shl *)
+(* Shr *)
 
-(* lt *)
+(* LT *)
 let lt_Int_Int sty_t l r st =
   match l, r with
   | V_Int(Some _l), V_Int(Some _r) ->
@@ -399,7 +400,7 @@ let lt_Int_Int sty_t l r st =
   | _ -> assert false
 
 
-(* gt *)
+(* GT *)
 let gt_Int_Int sty l r st =
   match l with
   | V_Int (Some i) ->
@@ -410,11 +411,16 @@ let gt_Int_Int sty l r st =
      end
   | _ -> assert false
 
-(* le *)
+(* LE *)
 
-(* ge *)
+(* GE *)
+let ge_Int_Int sty_t i1 i2 st =
+  match i1, i2 with
+  | V_Int(Some _i1), V_Int(Some _i2) ->
+     Coq_step(mk_V_Bool (_i1 <= _i2), st)
+  | _ -> assert false
 
-(* eq *)
+(* EQ *)
 let eq_LocAvl_node_base_LocAvl_node_base sty_t lc1 lc2 st =
   let b =
     match lc1, lc2 with
@@ -498,6 +504,11 @@ let postinc_Int sty_t lc st =
 (* Deref *)
 (* Plus *)
 (* Minus *)
+let minus_Int sty_t i st =
+  match i with
+  | V_Int(Some _i) -> Coq_step(mk_V_Int (- _i), st)
+  | _ -> assert false
+
 (* Not *)
 (* LNot *)
 let lnot_Bool sty_t b st =

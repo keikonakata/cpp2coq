@@ -158,6 +158,9 @@ Extract Constant gt_Int_Int => "Pervasives_impl.gt_Int_Int".
 
 (* LE *)
 (* GE *)
+Parameter ge_Int_Int : forall T, value Int -> value Int -> m Bool T.
+Extract Constant ge_Int_Int => "Pervasives_impl.ge_Int_Int".
+
 (* EQ *)
 Parameter eq_LocAvl_node_base_LocAvl_node_base : forall T, value (Loc Avl_node_base) -> value (Loc Avl_node_base) -> m Bool T.
 Extract Constant eq_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.eq_LocAvl_node_base_LocAvl_node_base".
@@ -217,6 +220,9 @@ Extract Constant postinc_Int => "Pervasives_impl.postinc_Int".
 (* Deref *)
 (* Plus *)
 (* Minus *)
+Parameter minus_Int : forall T, value Int -> m Int T.
+Extract Constant minus_Int => "Pervasives_impl.minus_Int".
+
 (* Not *)
 (* LNot *)
 Parameter lnot_Bool : forall T, value Bool -> m Bool T.
