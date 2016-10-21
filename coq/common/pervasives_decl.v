@@ -30,6 +30,20 @@ Parameter call : forall L T, fanswer L -> m L T.
 Extract Constant call => "Pervasives_impl.call".
 
 (**********)
+(** Stmt **)
+(**********)
+
+Parameter do_if : forall T, m Bool T -> m Void T -> m Void T -> m Void T.
+Extract Constant do_if => "Pervasives_impl.do_if".
+
+Parameter do_for : forall Linc Lbody T, m Bool T -> m Linc T -> m Lbody T -> m Void T.
+Extract Constant do_for => "Pervasives_impl.do_for".
+
+Parameter do_while : forall Lbody T, m Bool T -> m Lbody T -> m Void T.
+Extract Constant do_while => "Pervasives_impl.do_while".
+
+
+(**********)
 (** Expr **)
 (**********)
 
@@ -42,31 +56,180 @@ Extract Constant ife => "Pervasives_impl.ife".
 (*********************)
 (** Cast Operations **)
 (*********************)
-
+(* Dependent *)
+(* BitCast *)
+(* LValueBitCast *)
+(* LValueToRValue *)
+(* NoOp *)
+(* BaseToDerived *)
+(* DerivedToBase *)
+(* UncheckedDerivedToBase *)
+(* Dynamic *)
+(* ToUnion *)
+(* ArrayToPointerDecay *)
 Parameter array_to_pointer_decay : forall L, value (Loc (Array L)) -> value (Loc L).
 Extract Constant array_to_pointer_decay => "Pervasives_impl.array_to_pointer_decay".
 
-Parameter integral_cast : forall Src Trg T, value Src -> m Trg T.
-Extract Constant integral_cast => "Pervasives_impl.integral_cast".
-
-Parameter integral_to_boolean : forall L, value L -> value Bool.
-Extract Constant integral_to_boolean => "Pervasives_impl.integral_to_boolean".
-
+(* FunctionToPointerDecay *)
+(* NullToPointer *)
 Parameter null_to_pointer : forall L T, value L -> value T.
 Extract Constant null_to_pointer => "Pervasives_impl.null_to_pointer".
 
+(* NullToMemberPointer *)
+(* BaseToDerivedMemberPointer *)
+(* DerivedToBaseMemberPointer *)
+(* MemberPointerToBoolean *)
+(* ReinterpretMemberPointer *)
+(* UserDefinedConversion *)
+(* ConstructorConversion *)
+(* IntegralToPointer *)
+(* PointerToIntegral *)
+(* PointerToBoolean *)
 Parameter pointer_to_boolean : forall E, value (Loc E) -> value Bool.
 Extract Constant pointer_to_boolean => "Pervasives_impl.pointer_to_boolean".
+
+(* ToVoid *)
+(* VectorSplat *)
+(* IntegralCast *)
+Parameter integral_cast : forall Src Trg T, value Src -> m Trg T.
+Extract Constant integral_cast => "Pervasives_impl.integral_cast".
+
+(* IntegralToBoolean *)
+Parameter integral_to_boolean : forall L, value L -> value Bool.
+Extract Constant integral_to_boolean => "Pervasives_impl.integral_to_boolean".
+
+(* IntegralToFloating *)
+(* FloatingToIntegral *)
+(* FloatingToBoolean *)
+(* BooleanToSignedIntegral *)
+(* FloatingCast *)
+(* CPointerToObjCPointerCast *)
+(* BlockPointerToObjCPointerCast *)
+(* AnyPointerToBlockPointerCast *)
+(* ObjCObjectLValueCast *)
+(* FloatingRealToComplex *)
+(* FloatingComplexToReal *)
+(* FloatingComplexToBoolean *)
+(* FloatingComplexCast *)
+(* FloatingComplexToIntegralComplex *)
+(* IntegralRealToComplex *)
+(* IntegralComplexToReal *)
+(* IntegralComplexToBoolean *)
+(* IntegralComplexCast *)
+(* IntegralComplexToFloatingComplex *)
+(* ARCProduceObject *)
+(* ARCConsumeObject *)
+(* ARCReclaimReturnedObject *)
+(* ARCExtendBlockObject *)
+(* AtomicToNonAtomic *)
+(* NonAtomicToAtomic *)
+(* CopyAndAutoreleaseBlockObject *)
+(* BuiltinFnToFnPtr *)
+(* ZeroToOCLEvent *)
+(* AddressSpaceConversion *)
+(* IntToOCLSampler *)
 
 (***********************)
 (** Binary Operations **)
 (***********************)
 
+(* PtrMemD *)
+(* PtrMemI *)
+(* Mul *)
+(* Div *)
+(* Rem *)
+(* Add *)
+Parameter add_Int_Int : forall T, value Int -> value Int -> m Int T.
+Extract Constant add_Int_Int => "Pervasives_impl.add_Int_Int".
+
+(* Sub *)
+Parameter sub_Int_Int : forall T, value Int -> value Int -> m Int T.
+Extract Constant sub_Int_Int => "Pervasives_impl.sub_Int_Int".
+
+(* Shl *)
+(* Shr *)
+(* LT *)
+Parameter lt_Int_Int : forall T, value Int -> value Int -> m Bool T.
+Extract Constant lt_Int_Int => "Pervasives_impl.ne_Int_Int".
+
+(* GT *)
 Parameter gt_Int_Int : forall T, value Int -> value Int -> m Bool T.
 Extract Constant gt_Int_Int => "Pervasives_impl.gt_Int_Int".
 
-Parameter add_Int_Int : forall T, value Int -> value Int -> m Int T.
-Extract Constant add_Int_Int => "Pervasives_impl.add_Int_Int".
+(* LE *)
+(* GE *)
+(* EQ *)
+Parameter eq_LocAvl_node_base_LocAvl_node_base : forall T, value (Loc Avl_node_base) -> value (Loc Avl_node_base) -> m Bool T.
+Extract Constant eq_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.eq_LocAvl_node_base_LocAvl_node_base".
+
+Parameter eq_Int_Int : forall T, value Int -> value Int -> m Bool T.
+Extract Constant eq_Int_Int => "Pervasives_impl.eq_Int_Int".
+
+(* NE *)
+Parameter ne_LocAvl_node_base_LocAvl_node_base : forall T, value (Loc Avl_node_base) -> value (Loc Avl_node_base) -> m Bool T.
+Extract Constant eq_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.eq_LocAvl_node_base_LocAvl_node_base".
+
+Parameter ne_Int_Int : forall T, value Int -> value Int -> m Bool T.
+Extract Constant ne_Int_Int => "Pervasives_impl.ne_Int_Int".
+
+(* And *)
+(* Xor *)
+(* Or *)
+(* LAnd *)
+Parameter land_Bool_Bool : forall T, value Bool -> value Bool -> m Bool T.
+Extract Constant land_Bool_Bool => "Pervasives_impl.land_Bool_Bool".
+
+(* LOr *)
+(* Assign *)
+Parameter assign_Bool_Bool : forall T, value (Loc Bool) -> value Bool -> m (Loc Bool) T.
+Extract Constant assign_Bool_Bool => "Pervasives_impl.assign_Bool_Bool".
+
+Parameter assign_Uchar_Uchar : forall T, value (Loc Uchar) -> value Uchar -> m (Loc Uchar) T.
+Extract Constant assign_Uchar_Uchar => "Pervasives_impl.assign_Uchar_Uchar".
+
+Parameter assign_LocAvl_node_base_LocAvl_node_base : forall T, value (Loc (Loc Avl_node_base)) -> value (Loc Avl_node_base) -> m (Loc (Loc Avl_node_base)) T.
+Extract Constant assign_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.assign_LocAvl_node_base_LocAvl_node_base".
+
+(* MulAssign *)
+(* DivAssign *)
+(* RemAssign *)
+(* AddAssign *)
+(* SubAssign *)
+(* ShlAssign *)
+(* ShrAssign *)
+(* AndAssign *)
+(* XorAssign *)
+(* OrAssign *)
+(* Comma *)
+
+(***********************)
+(** Unary Operations **)
+(***********************)
+
+(* PostInc *)
+Parameter postinc_Int : forall T, value (Loc Int) -> m Int T.
+Extract Constant postinc_Int => "Pervasives_impl.postinc_Int".
+
+(* PostDec *)
+(* PreInc *)
+(* PreDec *)
+(* AddrOf *)
+(* Deref *)
+(* Plus *)
+(* Minus *)
+(* Not *)
+(* LNot *)
+Parameter lnot_Bool : forall T, value Bool -> m Bool T.
+Extract Constant lnot_Bool => "Pervasives_impl.lnot_Bool".
+
+(* Real *)
+(* Imag *)
+(* Extension *)
+(* Coawait *)
+
+(***************)
+(** Constants **)
+(***************)
 
 Parameter int_0 : value Int.
 Extract Constant int_0 => "Pervasives_impl.int_0".
@@ -74,5 +237,6 @@ Extract Constant int_0 => "Pervasives_impl.int_0".
 Parameter int_1 : value Int.
 Extract Constant int_1 => "Pervasives_impl.int_1".
 
-Parameter assign_LocAvl_node_base_LocAvl_node_base : forall T, value (Loc (Loc Avl_node_base)) -> value (Loc Avl_node_base) -> m (Loc (Loc Avl_node_base)) T.
-Extract Constant assign_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.assign_LocAvl_node_base_LocAvl_node_base".
+Parameter int_2 : value Int.
+Extract Constant int_1 => "Pervasives_impl.int_2".
+

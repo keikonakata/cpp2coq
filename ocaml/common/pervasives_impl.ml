@@ -221,6 +221,24 @@ let call sty_l sty_t f st =
 let call' f st = call Void Void f st
 
 (**********)
+(** Stmt **)
+(**********)
+
+let do_if sty cond ifthen ifelse st =
+  match cond st with
+  | Coq_ret _ as r -> r
+  | Coq_step(b, st) ->
+     begin
+       match b with
+       | V_Bool(Some _b) -> if _b then ifthen st else ifelse st
+       | _ -> assert false
+     end
+  | _ -> assert false
+
+let do_for sty_inc sty_body sty_t cond inc body st = assert false
+let do_while sty_body sty_t cond body st = assert false
+
+(**********)
 (** Expr **)
 (**********)
 
@@ -254,6 +272,36 @@ let ife sty_l sty_t c t f st =
 (** Cast Operations **)
 (*********************)
 
+(* Dependent *)
+(* BitCast *)
+(* LValueBitCast *)
+(* LValueToRValue *)
+(* NoOp *)
+(* BaseToDerived *)
+(* DerivedToBase *)
+(* UncheckedDerivedToBase *)
+(* Dynamic *)
+(* ToUnion *)
+(* ArrayToPointerDecay *)
+let array_to_pointer_decay sty v = v
+
+(* FunctionToPointerDecay *)
+(* NullToPointer *)
+let null_to_pointer sty_s sty_t v =
+  match v with
+  | V_Int(Some 0) -> V_Loc(Some 0)
+  | _ -> assert false
+
+(* NullToMemberPointer *)
+(* BaseToDerivedMemberPointer *)
+(* DerivedToBaseMemberPointer *)
+(* MemberPointerToBoolean *)
+(* ReinterpretMemberPointer *)
+(* UserDefinedConversion *)
+(* ConstructorConversion *)
+(* IntegralToPointer *)
+(* PointerToIntegral *)
+(* PointerToBoolean *)
 let pointer_to_boolean sty v =
   match v with
   | V_Loc (Some _v) ->
@@ -261,6 +309,9 @@ let pointer_to_boolean sty v =
   | V_Nullptr -> mk_V_Bool false
   | _ -> assert false
 
+(* ToVoid *)
+(* VectorSplat *)
+(* IntegralCast *)
 let integral_cast sty_src sty_trg sty_t v st =
   match v with
   | V_Int i ->
@@ -271,33 +322,55 @@ let integral_cast sty_src sty_trg sty_t v st =
      end
   | _ -> assert false
 
+(* IntegralToBoolean *)
 let integral_to_boolean sty v =
   match v with
   | V_Int (Some i) ->
      if i = 0 then mk_V_Bool false else mk_V_Bool true
   | _ -> assert false
 
-let array_to_pointer_decay sty v = v
-
-let null_to_pointer sty_s sty_t v =
-  match v with
-  | V_Int(Some 0) -> V_Loc(Some 0)
-  | _ -> assert false
+(* IntegralToFloating *)
+(* FloatingToIntegral *)
+(* FloatingToBoolean *)
+(* BooleanToSignedIntegral *)
+(* FloatingCast *)
+(* CPointerToObjCPointerCast *)
+(* BlockPointerToObjCPointerCast *)
+(* AnyPointerToBlockPointerCast *)
+(* ObjCObjectLValueCast *)
+(* FloatingRealToComplex *)
+(* FloatingComplexToReal *)
+(* FloatingComplexToBoolean *)
+(* FloatingComplexCast *)
+(* FloatingComplexToIntegralComplex *)
+(* IntegralRealToComplex *)
+(* IntegralComplexToReal *)
+(* IntegralComplexToBoolean *)
+(* IntegralComplexCast *)
+(* IntegralComplexToFloatingComplex *)
+(* ARCProduceObject *)
+(* ARCConsumeObject *)
+(* ARCReclaimReturnedObject *)
+(* ARCExtendBlockObject *)
+(* AtomicToNonAtomic *)
+(* NonAtomicToAtomic *)
+(* CopyAndAutoreleaseBlockObject *)
+(* BuiltinFnToFnPtr *)
+(* ZeroToOCLEvent *)
+(* AddressSpaceConversion *)
+(* IntToOCLSampler *)
 
 (***********************)
 (** Binary Operations **)
 (***********************)
 
-let gt_Int_Int sty l r st =
-  match l with
-  | V_Int (Some i) ->
-     begin
-       match r with
-       | V_Int (Some j) -> Coq_step(mk_V_Bool (i < j), st)
-       | _ -> assert false
-     end
-  | _ -> assert false
+(* ptrmemd *)
+(* ptrmemi *)
+(* mul *)
+(* div *)
+(* rem *)
 
+(* add *)
 let add_Int_Int sty l r st =
   match l with
   | V_Int(Some i) ->
@@ -308,13 +381,141 @@ let add_Int_Int sty l r st =
      end
   | _ -> assert false
 
-let int_0 = mk_V_Int 0
-let int_1 = mk_V_Int 1
+(* sub *)
+let sub_Int_Int sty_t l r st =
+  match l, r with
+  | V_Int(Some _l), V_Int(Some _r) ->
+     Coq_step(mk_V_Int (_l - _r), st)
+  | _ -> assert false
 
-(**************************)
-(** Temporal definitions **)
-(**************************)
+(* shl *)
+(* shr *)
+
+(* lt *)
+let lt_Int_Int sty_t l r st =
+  match l, r with
+  | V_Int(Some _l), V_Int(Some _r) ->
+     Coq_step(mk_V_Bool (_l < _r), st)
+  | _ -> assert false
+
+
+(* gt *)
+let gt_Int_Int sty l r st =
+  match l with
+  | V_Int (Some i) ->
+     begin
+       match r with
+       | V_Int (Some j) -> Coq_step(mk_V_Bool (i < j), st)
+       | _ -> assert false
+     end
+  | _ -> assert false
+
+(* le *)
+
+(* ge *)
+
+(* eq *)
+let eq_LocAvl_node_base_LocAvl_node_base sty_t lc1 lc2 st =
+  let b =
+    match lc1, lc2 with
+    | V_Loc(Some _lc1), V_Loc(Some _lc2) -> _lc1 = _lc2
+    | V_Loc(Some _lc1), V_Nullptr -> _lc1 = 0
+    | V_Nullptr, V_Loc(Some _lc2) -> 0 = _lc2
+    | V_Nullptr, V_Nullptr -> true
+    | _ -> assert false in
+  Coq_step(mk_V_Bool b, st)
+
+let eq_Int_Int sty_t i1 i2 st =
+  let b =
+    match i1, i2 with
+    | V_Int(Some _i1), V_Int(Some _i2) -> _i1 = _i2
+    | _ -> assert false in
+  Coq_ret(mk_V_Bool b, st)
+
+(* ne *)
+let ne_LocAvl_node_base_LocAvl_node_base sty_t lc1 lc2 st = assert false
+
+let ne_Int_Int sty_t l r st =
+  match l, r with
+  | V_Int(Some _l), V_Int(Some _r) ->
+     Coq_step(mk_V_Bool (_l != _r), st)
+  | _ -> assert false
+
+(* and *)
+(* xor *)
+(* or *)
+(* land *)
+let land_Bool_Bool sty_t l r st =
+  match l, r with
+  | V_Bool(Some _l), V_Bool(Some _r) ->
+     Coq_step(mk_V_Bool (_l && _r), st)
+  | _ -> assert false
+
+(* lor *)
+
+(* assign *)
+let assign_Bool_Bool sty_t lc v st =
+  put Bool sty_t lc v st;
+  Coq_step(lc, st)
 
 let assign_LocAvl_node_base_LocAvl_node_base sty_t lc v st =
-  put Void Void lc v st;
+  put (Loc Avl_node_base) sty_t lc v st;
   Coq_step(lc, st)
+
+let assign_Uchar_Uchar sty_t lc v st =
+  put Uchar sty_t lc v st;
+  Coq_step(lc, st)
+(* MulAssign *)
+(* DivAssign *)
+(* RemAssign *)
+(* AddAssign *)
+(* SubAssign *)
+
+(* ShlAssign *)
+(* ShrAssign *)
+(* AndAssign *)
+(* XorAssign *)
+(* OrAssign *)
+(* Comma *)
+
+(***********************)
+(** Unary Operations **)
+(***********************)
+
+(* PostInc *)
+let postinc_Int sty_t lc st =
+  match get Int sty_t lc st with
+  | Coq_step(V_Int(Some _i), st) ->
+     let new_value = mk_V_Int (_i + 1) in
+     put Int sty_t lc new_value st;
+     Coq_step(new_value, st)
+  | _ -> assert false
+
+(* PostDec *)
+(* PreInc *)
+(* PreDec *)
+(* AddrOf *)
+(* Deref *)
+(* Plus *)
+(* Minus *)
+(* Not *)
+(* LNot *)
+let lnot_Bool sty_t b st =
+  match b with
+  | V_Bool(Some _b) -> Coq_step(mk_V_Bool (not _b), st)
+  | _ -> assert false
+
+(* Real *)
+(* Imag *)
+(* Extension *)
+(* Coawait *)
+
+(***************)
+(** Constants **)
+(***************)
+
+let int_0 = mk_V_Int 0
+let int_1 = mk_V_Int 1
+let int_2 = mk_V_Int 2
+
+
