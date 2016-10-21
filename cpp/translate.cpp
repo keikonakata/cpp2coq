@@ -354,6 +354,11 @@ void Translate::TranslateRecordDecl(RecordDecl *d) {
     outs() << "End " << rname << ".\n";
 }
 
+void Translate::TranslateNamespaceDecl(const NamespaceDecl *d) {
+    for (auto decl : d->decls()) {
+        TranslateDecl(decl);
+    }
+}
 
 void Translate::TranslateDecl(const Decl *d) {
     if (AccessSpecDecl::classof(d)) {
@@ -361,6 +366,7 @@ void Translate::TranslateDecl(const Decl *d) {
     } else if (NamedDecl::classof(d)) {
         if (NamespaceDecl::classof(d)) {
             const NamespaceDecl *nsdecl = (const NamespaceDecl *) d;
+            TranslateNamespaceDecl(nsdecl);
         } else if (TemplateDecl::classof(d)) {
             if (RedeclarableTemplateDecl::classof(d)) {
                 if (FunctionTemplateDecl::classof(d)) {

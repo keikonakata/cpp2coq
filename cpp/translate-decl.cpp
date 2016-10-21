@@ -25,6 +25,9 @@ bool IsCallByLocation(const Type *ty) {
     } else if (TypedefType::classof(ty)) {
         const TypedefType *tdty = (const TypedefType *) ty;
         return IsCallByLocation(tdty->desugar());
+    } else if (SubstTemplateTypeParmType::classof(ty)) {
+        const SubstTemplateTypeParmType * pty = (const SubstTemplateTypeParmType *) ty;
+        return IsCallByLocation(pty->getReplacementType());
     } else {
         ty->dump();
         outs() << "IsCallByLocation::else\n";
@@ -63,8 +66,6 @@ void translateDecl::TranslateFieldDecl(const FieldDecl *d) {
 }
 
 void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
-    if (!d->hasBody()) return;
-
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);
@@ -79,8 +80,13 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
         }
     }
 
+    vector<string> pnames;
     for (auto param : d->parameters()) {
         std::string pname = param->getNameAsString();
+        if (pname == "") {
+            pname = "tmp";
+        }
+        pnames.emplace_back(pname);
 
         QualType qt_param = param->getType();
         std::string sname = TranslateQualType(qt_param, TypeMode::var);
@@ -104,8 +110,8 @@ void translateDecl::TranslateFunctionDecl(const FunctionDecl *d) {
         }
     }
 
-    for (auto param : d->parameters()) {
-        outs() << "fun (" << param->getNameAsString() << " : value) -> ";
+    for (auto pname : pnames) {
+        outs() << "fun (" << pname << " : value) -> ";
     }
 
     outs() << "fun (st : state) -> ";

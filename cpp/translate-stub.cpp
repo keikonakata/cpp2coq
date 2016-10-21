@@ -31,8 +31,6 @@ void translateStub::TranslateVarDecl(const VarDecl *d) {
 }
 
 void translateStub::TranslateFunctionDecl(const FunctionDecl *d) {
-    if (!d->hasBody()) return;
-
     outs() << "\n";
 
     std::string fname = NameOfFunctionDecl(d);

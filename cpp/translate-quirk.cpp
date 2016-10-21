@@ -20,8 +20,6 @@ void translateQuirk::TranslateVarDecl(const VarDecl *d) {
 }
 
 void translateQuirk::TranslateFunctionDecl(const FunctionDecl *d) {
-    if (!d->hasBody()) return;
-
     outs() << "\n";
 
     std::string fname_stub = StubFile(FileOfDecl(d, _cxt.getSourceManager()));

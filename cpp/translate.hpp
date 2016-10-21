@@ -46,6 +46,8 @@ class Translate {
 
     void virtual TranslateEnumDecl(EnumDecl *d);
 
+    void TranslateNamespaceDecl(const NamespaceDecl *d);
+
     void TranslateFunctionTemplateDecl(FunctionTemplateDecl *d);
 
 protected:

@@ -142,6 +142,34 @@ std::string NameOfBinaryOperator(BinaryOperator::Opcode op) {
     return std::string { "NameOfBinaryOperator::else" };
 }
 
+std::string NameOfUnaryOperator(UnaryOperator::Opcode op) {
+    switch (op) {
+    case UO_PostInc:
+        return std::string { "postinc" };
+    case UO_PostDec:
+        return std::string { "postdec" };
+    case UO_PreInc:
+        return std::string { "preinc" };
+    case UO_PreDec:
+        return std::string { "predec" };
+    case UO_AddrOf:
+        return std::string { "addrof" };
+    case UO_Deref:
+        return std::string { "deref" };
+    case UO_Plus:
+        return std::string { "plus" };
+    case UO_Minus:
+        return std::string { "minus" };
+    case UO_Not:
+        return std::string { "not" };
+    case UO_LNot:
+        return std::string { "lnot" };
+    }
+
+    return std::string { "NameOfUnaryOperator::else" };
+}
+
+
 std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
     QualType qt = e->getType();
     if (AbstractConditionalOperator::classof(e)) {
@@ -229,9 +257,7 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
                 }
             case CK_FunctionToPointerDecay:
                 {
-                    std::string name_new
-                    { "(function_to_pointer_decay _ " + name_sub + ")" };
-                    return BindOrReturn(name_new, name);
+                    return name_sub;
                 }
             case CK_IntegralCast:
                 {
@@ -250,6 +276,10 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
                     std::string name_new = GenName(qt, name);
                     outs() << name_new << " <- get _ _ " << name_sub << ";\n";
                     return name_new;
+                }
+            case CK_NoOp:
+                {
+                    return BindOrReturn(name_sub, name);
                 }
             case CK_NullToPointer:
                 {
@@ -340,6 +370,18 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         ParenExpr *pexpr = (ParenExpr *) e;
         Expr* sexpr = pexpr->getSubExpr();
         return TranslateExpr(sexpr);
+    } else if (UnaryOperator::classof(e)) {
+        UnaryOperator *uexpr = (UnaryOperator *) e;
+
+        UnaryOperator::Opcode op = uexpr->getOpcode();
+        std::string opname = NameOfUnaryOperator(op);
+
+        Expr *sexpr = uexpr->getSubExpr();
+        std::string sname = TranslateExpr(sexpr);
+        std::string name_sqt = TranslateQualType(sexpr->getType(), TypeMode::str);
+        std::string name_ret = GenName(qt, name);
+        outs() << name_ret << " <- " << opname << "_" << name_sqt << " _ " << sname << ";\n";
+        return name_ret;
     }
 
     e->dump();
@@ -427,7 +469,7 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
             TranslateStmt(s_init, StmtMode::semicolon);
         }
 
-        outs() << Prompt(mode) << "do_for\n";
+        outs() << Prompt(mode) << "do_for _ _ _\n";
 
         outs() << "(";
         if (e_cond) {
@@ -452,6 +494,7 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
         } else {
             outs() << "step _ ttt";
         }
+        outs() << ")";
         outs() << Punct(mode);
     } else if (IfStmt::classof(s)) {
         IfStmt *s_if = (IfStmt *) s;
@@ -464,12 +507,12 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
             TranslateStmt(s_init, StmtMode::semicolon);
         }
 
-        outs() << Prompt(mode) << "do_if\n";
+        outs() << Prompt(mode) << "do_if _\n";
 
         outs() << "(";
         if (e_cond) {
             std::string name = TranslateExpr(e_cond);
-            outs() << "Step _ " << name;
+            outs() << "step _ " << name;
         } else {
         }
         outs() << ")\n";
@@ -478,7 +521,7 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
         if (s_then) {
             TranslateStmt(s_then, StmtMode::none);
         } else {
-            outs() << "Step _ ttt";
+            outs() << "step _ ttt";
         }
         outs() << ")\n";
 
@@ -486,7 +529,7 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
         if (s_else) {
             TranslateStmt(s_else, StmtMode::none);
         } else  {
-            outs() << "Step _ ttt";
+            outs() << "step _ ttt";
         }
         outs() << ")" << Punct(mode);
 
@@ -505,7 +548,7 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
         Expr *e_cond = s_while->getCond();
         Stmt *s_body = s_while->getBody();
 
-        outs() << Prompt(mode) << "while\n";
+        outs() << Prompt(mode) << "do_while _ _\n";
 
         outs() << "(";
         if (e_cond) {
