@@ -161,6 +161,9 @@ Extract Constant gt_Int_Int => "Pervasives_impl.gt_Int_Int".
 Parameter ge_Int_Int : forall T, value Int -> value Int -> m Bool T.
 Extract Constant ge_Int_Int => "Pervasives_impl.ge_Int_Int".
 
+Parameter ge_Uint_Uint : forall T, value Uint -> value Uint -> m Bool T.
+Extract Constant ge_Uint_Uint => "Pervasives_impl.ge_Uint_Uint".
+
 (* EQ *)
 Parameter eq_LocAvl_node_base_LocAvl_node_base : forall T, value (Loc Avl_node_base) -> value (Loc Avl_node_base) -> m Bool T.
 Extract Constant eq_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.eq_LocAvl_node_base_LocAvl_node_base".
@@ -170,7 +173,7 @@ Extract Constant eq_Int_Int => "Pervasives_impl.eq_Int_Int".
 
 (* NE *)
 Parameter ne_LocAvl_node_base_LocAvl_node_base : forall T, value (Loc Avl_node_base) -> value (Loc Avl_node_base) -> m Bool T.
-Extract Constant eq_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.eq_LocAvl_node_base_LocAvl_node_base".
+Extract Constant ne_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.ne_LocAvl_node_base_LocAvl_node_base".
 
 Parameter ne_Int_Int : forall T, value Int -> value Int -> m Bool T.
 Extract Constant ne_Int_Int => "Pervasives_impl.ne_Int_Int".
@@ -217,6 +220,9 @@ Extract Constant postinc_Int => "Pervasives_impl.postinc_Int".
 (* PreInc *)
 (* PreDec *)
 (* AddrOf *)
+Parameter addrof_Avl_node_base : forall T, value (Loc Avl_node_base) -> m (Loc Avl_node_base) T.
+Extract Constant addrof_Avl_node_base => "Pervasives_impl.addrof_Avl_node_base".
+
 (* Deref *)
 (* Plus *)
 (* Minus *)
@@ -244,5 +250,11 @@ Parameter int_1 : value Int.
 Extract Constant int_1 => "Pervasives_impl.int_1".
 
 Parameter int_2 : value Int.
-Extract Constant int_1 => "Pervasives_impl.int_2".
+Extract Constant int_2 => "Pervasives_impl.int_2".
+
+Parameter int_3 : value Int.
+Extract Constant int_3 => "Pervasives_impl.int_3".
+
+Parameter int_5 : value Int.
+Extract Constant int_5 => "Pervasives_impl.int_5".
 
