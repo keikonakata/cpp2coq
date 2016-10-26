@@ -22,6 +22,8 @@ std::string DeclFile(std::string s);
 std::string ImplFile(std::string s);
 std::string StubFile(std::string s);
 
+void TranslateTemplateArgument(const TemplateArgument &arg, std::vector<std::string> &names, TypeMode mode);
+
 std::string TranslateQualType(const QualType qt, TypeMode mode);
 
 std::string TranslateType(const Type *ty, TypeMode mode);

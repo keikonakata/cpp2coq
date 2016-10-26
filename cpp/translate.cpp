@@ -276,6 +276,35 @@ string TranslateQualType(const QualType qt, TypeMode mode) {
     }
 }
 
+
+void TranslateTemplateArgument(const TemplateArgument &arg, vector<string> &names, TypeMode mode) {
+    TemplateArgument::ArgKind kind = arg.getKind();
+    switch (kind) {
+    case TemplateArgument::Type:
+        {
+            QualType qt = arg.getAsType();
+            names.emplace_back(TranslateQualType(qt, mode));
+            break;
+        }
+    case TemplateArgument::Pack:
+        {
+            for (auto parg : arg.pack_elements()) {
+                TranslateTemplateArgument(parg, names, mode);
+            }
+            break;
+        }
+    default:
+            names.emplace_back("TranslateTemplateArgument::Else");
+    }
+}
+
+void TranslateTemplateArgumentList(const TemplateArgumentList *args, vector<string> &names, TypeMode mode) {
+    unsigned size = args->size();
+    for (auto i = 0; i < size; i++) {
+        TranslateTemplateArgument(args->get(i), names, mode);
+    }
+}
+
 std::string NameOfFunctionDecl(const FunctionDecl *d) {
 
     std::string fname;
@@ -295,20 +324,7 @@ std::string NameOfFunctionDecl(const FunctionDecl *d) {
     if (ftdecl) {
         const TemplateArgumentList *targs = d->getTemplateSpecializationArgs();
         if (targs) {
-            unsigned size = targs->size();
-            for (auto i = 0; i < size; i++) {
-                TemplateArgument::ArgKind kind = targs->get(i).getKind();
-                switch (kind) {
-                case TemplateArgument::Type:
-                    {
-                        QualType qt = targs->get(i).getAsType();
-                        anames.emplace_back(TranslateQualType(qt, TypeMode::str));
-                        break;
-                    }
-                default:
-                    anames.emplace_back("NameOfFunctionDecl::NOT_A_TYPE");
-                }
-            }
+            TranslateTemplateArgumentList(targs, anames, TypeMode::str);
         } else {
             outs() << "NameOfFunctionDecl::TemplateArgumentList is NULL.\n";
         }
