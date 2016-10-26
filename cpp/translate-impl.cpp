@@ -209,18 +209,33 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         Expr *lexpr = bexpr->getLHS();
         Expr *rexpr = bexpr->getRHS();
 
-        std::string lname = TranslateExpr(lexpr);
-        std::string lname_qt = TranslateQualType(lexpr->getType(), TypeMode::str);
-
-        std::string rname = TranslateExpr(rexpr);
-        std::string rname_qt = TranslateQualType(rexpr->getType(), TypeMode::str);
-
         BinaryOperator::Opcode op = bexpr->getOpcode();
         std::string oname = NameOfBinaryOperator(op);
-
+        std::string lname_qt = TranslateQualType(lexpr->getType(), TypeMode::str);
+        std::string rname_qt = TranslateQualType(rexpr->getType(), TypeMode::str);
         std::string name_ret = GenName(qt, name);
-        outs() << name_ret << " <- " << oname << "_" << lname_qt << "_" << rname_qt << " _ " << lname << " " << rname << ";\n";
-        return name_ret;
+
+        switch (op) {
+        case BO_LAnd:
+        case BO_LOr:
+            {
+                outs() << name_ret << " <- " << oname << "_" << lname_qt << "_" << rname_qt << " _\n";
+
+                outs() << "(";
+                std::string lname = TranslateExpr(lexpr);
+                outs() << "step _ " << lname << ")\n";
+
+                outs() << "(";
+                std::string rname = TranslateExpr(rexpr);
+                outs() << "step _ " << rname << ");\n";
+                return name_ret;
+            }
+        default:
+            std::string lname = TranslateExpr(lexpr);
+            std::string rname = TranslateExpr(rexpr);
+            outs() << name_ret << " <- " << oname << "_" << lname_qt << "_" << rname_qt << " _ " << lname << " " << rname << ";\n";
+            return name_ret;
+        }
     } else if (CallExpr::classof(e)) {
         CallExpr *cexpr = (CallExpr *) e;
         std::string name_ret = GenName(qt, name);
@@ -300,6 +315,13 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         } else {
             return std::string { "TranslateExpr::ExplicitCastExpr" };
         }
+    } else if (CXXBoolLiteralExpr::classof(e)) {
+        CXXBoolLiteralExpr *bexpr = (CXXBoolLiteralExpr *) e;
+        if (bexpr->getValue()) {
+            return BindOrReturn("tt", name);
+        } else {
+            return BindOrReturn("ff", name);
+        }
     } else if (CXXConstructExpr::classof(e)) {
         CXXConstructExpr *cexpr = (CXXConstructExpr *) e;
         CXXConstructorDecl *cxxcdecl = cexpr->getConstructor();
@@ -310,7 +332,7 @@ std::string translateImpl::TranslateExpr(Expr *e, std::string name) {
         std::vector<std::string> anames;
 
         std::string name_new = GenName(qt, name);
-        std::string name_ty = NameOfRecordDecl(cxxrdecl);
+        std::string name_ty = TypeOfRecordDecl(cxxrdecl);
         outs() << name_new << " <- salloc " << name_ty << " _;\n";
         anames.emplace_back(name_new);
 
@@ -404,6 +426,8 @@ bool IsAlias(const Type *ty) {
         return true;
     } else if (SubstTemplateTypeParmType::classof(ty)) {
         return IsAlias(((const SubstTemplateTypeParmType *) ty)->getReplacementType());
+    } else if (ElaboratedType::classof(ty)) {
+            return IsAlias(((const ElaboratedType *) ty)->getNamedType());
     }
 
     return false;
@@ -573,6 +597,9 @@ void translateImpl::TranslateStmt(Stmt *s, StmtMode mode) {
 }
 
 void translateImpl::TranslateFunctionDecl(const FunctionDecl *d) {
+    if (!d->isThisDeclarationADefinition()) {
+        return;
+    }
     ResetName();
     // if (d->getNameAsString() != "_child_depth" && d->getNameAsString() != "_bias") return;
 

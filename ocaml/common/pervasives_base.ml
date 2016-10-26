@@ -11,6 +11,7 @@ type longlong = int option
 
 type value =
 | V_Avl_node_base of avl_node_base
+| V_Avl_node_basePolicy
 | V_Void
 | V_Loc of loc
 | V_Array of value array
@@ -25,7 +26,8 @@ type value =
 | V_Longlong of longlong
 | V_Nullptr
 
-and avl_node_base = { mutable _child : value; mutable _parent : value; mutable _depth : value; _value : value }
+and avl_node_base = { mutable _child : value; mutable _parent : value; mutable _depth : value; mutable _value : value }
+
 
 let init_V_Loc () = V_Loc None
 let init_V_Int () = V_Int None

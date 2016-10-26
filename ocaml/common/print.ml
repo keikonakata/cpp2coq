@@ -13,3 +13,13 @@ let print_value v =
   | V_Loc lc -> print_Loc lc
   | V_Void -> print_endline "void"
   | _ -> assert false
+
+let print_Avl_node_base lc st =
+  match st.space.(lc) with
+  | Val v ->
+     begin
+       match v with
+       | V_Avl_node_base nd -> assert false
+       | _ -> assert false
+     end
+  | _ -> assert false

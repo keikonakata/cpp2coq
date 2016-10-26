@@ -17,7 +17,8 @@ OCAML_ML_FILES = $(shell find $(ROOT_DIR) -name "*.ml")
 OCAML_MLI_FILES = $(shell find $(ROOT_DIR) -name "*.mli")
 
 top:
-	echo no target
+	make extract
+	make $(ROOT_DIR)/ocaml/main/main
 
 .PHONY : depend extract
 

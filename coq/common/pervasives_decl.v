@@ -150,13 +150,22 @@ Extract Constant sub_Int_Int => "Pervasives_impl.sub_Int_Int".
 (* Shr *)
 (* LT *)
 Parameter lt_Int_Int : forall T, value Int -> value Int -> m Bool T.
-Extract Constant lt_Int_Int => "Pervasives_impl.ne_Int_Int".
+Extract Constant lt_Int_Int => "Pervasives_impl.lt_Int_Int".
+
+Parameter lt_Uint_Uint : forall T, value Uint -> value Uint -> m Bool T.
+Extract Constant lt_Uint_Uint => "Pervasives_impl.lt_Uint_Uint".
 
 (* GT *)
 Parameter gt_Int_Int : forall T, value Int -> value Int -> m Bool T.
 Extract Constant gt_Int_Int => "Pervasives_impl.gt_Int_Int".
 
 (* LE *)
+Parameter le_Int_Int : forall T, value Int -> value Int -> m Bool T.
+Extract Constant le_Int_Int => "Pervasives_impl.le_Int_Int".
+
+Parameter le_Uint_Uint : forall T, value Uint -> value Uint -> m Bool T.
+Extract Constant le_Uint_Uint => "Pervasives_impl.le_Uint_Uint".
+
 (* GE *)
 Parameter ge_Int_Int : forall T, value Int -> value Int -> m Bool T.
 Extract Constant ge_Int_Int => "Pervasives_impl.ge_Int_Int".
@@ -167,6 +176,9 @@ Extract Constant ge_Uint_Uint => "Pervasives_impl.ge_Uint_Uint".
 (* EQ *)
 Parameter eq_LocAvl_node_base_LocAvl_node_base : forall T, value (Loc Avl_node_base) -> value (Loc Avl_node_base) -> m Bool T.
 Extract Constant eq_LocAvl_node_base_LocAvl_node_base => "Pervasives_impl.eq_LocAvl_node_base_LocAvl_node_base".
+
+Parameter eq_Uint_Uint : forall T, value Uint -> value Uint -> m Bool T.
+Extract Constant eq_Uint_Uint => "Pervasives_impl.eq_Uint_Uint".
 
 Parameter eq_Int_Int : forall T, value Int -> value Int -> m Bool T.
 Extract Constant eq_Int_Int => "Pervasives_impl.eq_Int_Int".
@@ -182,7 +194,7 @@ Extract Constant ne_Int_Int => "Pervasives_impl.ne_Int_Int".
 (* Xor *)
 (* Or *)
 (* LAnd *)
-Parameter land_Bool_Bool : forall T, value Bool -> value Bool -> m Bool T.
+Parameter land_Bool_Bool : forall T, m Bool T -> m Bool T -> m Bool T.
 Extract Constant land_Bool_Bool => "Pervasives_impl.land_Bool_Bool".
 
 (* LOr *)
@@ -254,6 +266,9 @@ Extract Constant int_2 => "Pervasives_impl.int_2".
 
 Parameter int_3 : value Int.
 Extract Constant int_3 => "Pervasives_impl.int_3".
+
+Parameter int_4 : value Int.
+Extract Constant int_4 => "Pervasives_impl.int_4".
 
 Parameter int_5 : value Int.
 Extract Constant int_5 => "Pervasives_impl.int_5".

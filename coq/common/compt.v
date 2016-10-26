@@ -11,7 +11,7 @@ Inductive compt (L T : stype) : Set :=
 | ret : value T -> state -> compt L T
 | continue : state -> compt L T
 | break : state -> compt L T
-| error : compt L T.
+| error : state -> compt L T.
 
 Definition m (L T : stype) := state -> compt L T.
 Definition result (T : stype) := m Void T.
@@ -24,7 +24,7 @@ match a st with
 | ret v st' => ret _ v st'
 | continue st' => continue _ _ st'
 | break st' => break _ _ st'
-| error => error _ _
+| error st => error _ _ st
 end.
 
 Notation "X <- A ; B" := (bind A (fun X => B)) (at level 80, right associativity).
