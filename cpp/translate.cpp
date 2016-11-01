@@ -408,6 +408,13 @@ void Translate::TranslateDecl(const Decl *d) {
                     d->dump();
                     outs() << "TranslateDecl::TagDecl::else\n";
                 }
+            } else if (TypedefNameDecl::classof(d)) {
+                if (TypedefDecl::classof(d)) {
+                    return;
+                } else {
+                    d->dump();
+                    outs() << "TranslateDecl::TypedefNameDecl::else\n";
+                }
             } else {
                 d->dump();
                 outs() << "TranslateDecl::TypeDecl::else\n";
