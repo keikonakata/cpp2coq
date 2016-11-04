@@ -357,6 +357,10 @@ void Translate::TranslateRecordDecl(RecordDecl *d) {
         return;
     }
 
+    if (!d->isThisDeclarationADefinition()) {
+        return;
+    }
+
     outs() << "\n";
 
     std::string rname = NameOfRecordDecl(d);
